@@ -17,6 +17,7 @@
   - [Helm](#helm)
   - [Terraform](#terraform)
   - [Terragrunt](#terragrunt)
+  - [Multitenancy](#multitenancy)
 
 ## REFERENCE
 
@@ -49,7 +50,14 @@
   - Kubernetes and Terraform complement each other since they operate at two different levels and can be utilized in parallel.
   - A typical model that cloud practitioners adopt is to use Terraform to provision infrastructure resources (e.g. Kubernetes clusters) and use Kubernetes to manage the containerized apps that run on top of the clusters.
   - Another approach is to use Terraform to manage Kubernetes-specific application components as well. This model has the advantage of adding the Terraform workflow to Kubernetes components. This way, IT operators can detect configuration drift on Kubernetes and manage infrastructure and application resources with the same workflow and configuration language. This approach has a significant disadvantage since Terraform requires a well-defined schema for each managed resource. Thus each Kubernetes resource needs to be translated into a Terraform schema to be available. This dependency makes maintaining Kubernetes resources through Terraform cumbersome at times.
-- terej
+- Terraform vs Helm
+  - Infrastructure Provisioning vs. Application Deployment;
+    - Terraform excels in provisioning and managing infrastructure resources across various cloud providers. It is suitable for defining and managing virtual machines, Kubernetes clusters, storage, and networking components.
+    - Helm, however, focuses on packaging and deploying applications on Kubernetes. It streamlines the installation, upgrading, and rollback of containerized applications.
+  - Infrastructure as Code vs. Application Packaging
+    - Terraform's strength lies in its ability to define infrastructure resources as code. This approach ensures that infrastructure changes can be version-controlled, reviewed, and shared among teams.
+    - Helm, being a package manager, specializes in bundling applications and their configurations into portable packages. This allows for consistent deployment across different environments.
+- jife
 
 ## Distributed System
 
@@ -180,6 +188,30 @@ Helm has a fairly simple client-server architecture, including a CLI client and 
 - **Helm Client**: Provides the developer to use it a command-line interface (CLI) to work with Charts, Config, Release, Repositories. Helm Client will interact with Tiller Server, to perform various actions such as install, upgrade and rollback with Charts, Release.
 - **Tiller** Server: an in-cluster server in the Kubernetes cluster, interacting with the Helm Client and communicating with the Kubernetes API server. Thus, Helm can easily manage Kubernetes with tasks such as install, upgrade, query and remove for Kubernetes resources.
 
+Helm focuses on application packaging and deployment. Helm is a Kubernetes package manager that streamlines the installation and management of containerized applications. It uses "charts" as packaged applications, containing all the necessary Kubernetes resources, configuration files, and dependencies. This allows for simplified application deployment, version management, and rollbacks.
+
+A Helm Chart is **a packaging format** used to define, install, upgrade, deploy and manage Kubernetes applications. It lets you group multiple Kubernetes resources—like Deployments, Services, and Persistent Volumes—into one reusable unit. Helm Charts automate complex Kubernetes deployments by templating configurations and managing lifecycle upgrades.
+
+Deploying real-world applications in Kubernetes usually involves several moving parts: app containers, config maps, secrets, service accounts, and storage. Managing all of this manually becomes inefficient fast. Helm solves this by turning infrastructure into modular, repeatable packages. It reduces human error, accelerates CI/CD pipelines, and makes rollbacks as simple as a single command.
+
+How a Helm Chart Is Organized
+
+- Each Helm Chart is a folder that follows a clear structure, making it easier to manage, update, and reuse across environments.
+- **Chart.yaml** – It contains metadata like the chart name, version, and a brief description.
+- **values.yaml** – Defines default configuration values that can be overridden at deployment.
+- **templates/** – Holds the actual Kubernetes manifest templates using Go templating.
+- **charts/** – (Optional) Includes subcharts or external dependencies that the main chart relies on.
+
+Helm is built for scaling, upgrading, and maintaining production environments.
+
+good habits:
+
+- Keep values.yaml files environment-specific (dev, staging, prod)
+- Store your charts in version control alongside app code
+- Don’t hardcode secrets—use tools like Sealed Secrets or a vault
+- Lint charts before deploying with **helm lint**
+- Use subcharts for reusable services across apps
+
 ## Terraform
 
 Terraform: Declarative Kubernetes Configurations
@@ -196,9 +228,13 @@ Terraform is written in a declarative configuration language, Hashicorp Configur
 
 Modules provide excellent reusability and code-sharing opportunities to boost the collaboration and productivity of teams operating on the cloud. Providers are plugins that offer integration and interaction with different APIs and are one of the main ways to extend Terraform’s functionality. 
 
-Terraform keeps an internal state of the managed infrastructure, which represents resources, configuration, metadata, and their relationships. The state is actively maintained by Terraform and utilized to create plans, track changes, and enable modifications of infrastructure environments. The state should be stored remotely to allow teamwork and collaboration as a best practice. 
+Terraform keeps an internal state of the managed infrastructure, which represents resources, configuration, metadata, and their relationships. The state is actively maintained by Terraform and utilized to create plans, track changes, and enable modifications of infrastructure environments. The state should be stored remotely to allow teamwork and collaboration as a best practice.
 
 The core Terraform workflow consists of three concrete stages. First, we generate the infrastructure as code configuration files representing our environment’s desired state. Next, we check the output of the generated plan based on our manifests. After carefully reviewing the changes, we apply the plan to provision infrastructure resources.
+
+Terraform is an infrastructure provisioning tool that enables users to define and manage their infrastructure as code. It provides a declarative language to describe the desired state of infrastructure resources, such as virtual machines, Kubernetes nodes, storage, and networking components.
+
+Terraform then automates the provisioning and management of these resources across multiple cloud platforms, making it highly versatile. By executing Terraform, the desired infrastructure is automatically provisioned, ensuring consistency and reproducibility.
 
 ## Terragrunt
 
@@ -206,3 +242,15 @@ Terragrunt: Orchestrating Terraform Configurations
 As infrastructure grows in complexity, managing multiple Terraform configurations across different environments becomes challenging. Terragrunt, an open-source tool, acts as a thin wrapper around Terraform, enabling configuration reuse and better orchestration.
 
 Terragrunt allows developers to follow the Don't Repeat Yourself (DRY) principle by sharing common Terraform configurations across different environments. With Terragrunt's ability to manage dependencies and inheritance, teams can maintain a clear and organized codebase while ensuring consistency and reducing errors.
+
+## Multitenancy
+
+Multitenancy (or multi-tenancy) refers to a single software installation that serves multiple tenants. A **tenant** is a user, application, or a group of users/applications that utilize the software to operate on their own data set. These tenants don’t share data (unless explicitly instructed by the owner) and may not even be aware of one another.
+
+A tenant can be as small as one independent user with a single login ID — think personal productivity software — or as large as an entire corporation with thousands of login IDs, each with its own privileges yet interrelated in multiple ways.
+
+Without multitenancy, each tenant would need a dedicated software installation. This increases resource utilization and maintenance efforts, ultimately software costs.
+
+Multitenant software provides each tenant a segregated environment (work data, settings, list of credentials, etc.), simultaneously serving multiple tenants. From a tenant’s perspective, each has its dedicated software installation, although, in reality, they are all sharing one.
+
+With multitenant software, tenants share the resources of one installation without affecting each other or only in predefined and controlled ways.
