@@ -190,7 +190,7 @@ Helm has a fairly simple client-server architecture, including a CLI client and 
 
 Helm focuses on application packaging and deployment. Helm is a Kubernetes package manager that streamlines the installation and management of containerized applications. It uses "charts" as packaged applications, containing all the necessary Kubernetes resources, configuration files, and dependencies. This allows for simplified application deployment, version management, and rollbacks.
 
-A Helm Chart is **a packaging format** used to define, install, upgrade, deploy and manage Kubernetes applications. It lets you group multiple Kubernetes resources—like Deployments, Services, and Persistent Volumes—into one reusable unit. Helm Charts automate complex Kubernetes deployments by templating configurations and managing lifecycle upgrades.
+A Helm Chart is **a packaging format** used to define, install, upgrade, deploy, share, and manage Kubernetes applications. It lets you group multiple Kubernetes resources—like Deployments, Services, and Persistent Volumes—into one reusable unit. Helm Charts automate complex Kubernetes deployments by templating configurations and managing lifecycle upgrades. Charts describe even the most complex apps, provide repeatable application installation, and serve as a single point of authority.
 
 Deploying real-world applications in Kubernetes usually involves several moving parts: app containers, config maps, secrets, service accounts, and storage. Managing all of this manually becomes inefficient fast. Helm solves this by turning infrastructure into modular, repeatable packages. It reduces human error, accelerates CI/CD pipelines, and makes rollbacks as simple as a single command.
 
@@ -211,6 +211,19 @@ good habits:
 - Don’t hardcode secrets—use tools like Sealed Secrets or a vault
 - Lint charts before deploying with **helm lint**
 - Use subcharts for reusable services across apps
+
+commands:
+
+- helm lint: correct any syntax error
+- helm template:  replace the placeholder object with original values and show the complete file in console.
+- helm install --dry-run: pretend to install the manifests file and try to display the manifests files.
+- helm install prod: // kubectl create namespace prod (dev) in advance
+- kubectl get all -n prod: confirm the deployment is successful
+- helm list: check the number of releases in the host.
+- helm upgrade (prod)：if any environment needs to update with image details, versions, replica count, storage memory etc…, we can do that with upgrade by without bringing down the original state
+- helm rollback (prod): rollback to previous state
+- helm package: package the chart and deploy it to Github, S3, or any chart repository
+- helm uninstall (dev): uninstall the helm release; it will remove all of the resources associated with the last release of the chart.
 
 ## Terraform
 
