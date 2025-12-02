@@ -87,6 +87,8 @@ Docker containers have revolutionized software development by encapsulating appl
 
 By leveraging Docker images, we can reduce the infamous "it works on my machine" problem. This consistency is especially valuable when deploying applications to Kubernetes clusters, as it eliminates the need to deal with subtle environment differences that could lead to production issues.
 
+Docker is the platform for creating, deploying, and running applications in containers. It provides a consistent environment for applications using containers. It can be used as the container runtime for Kubernetes. 
+
 ## Cloud Native Apps
 
 Cloud native applications are specifically designed to take advantage of innovations in cloud computing. These applications integrate easily with their respective cloud architectures, taking advantage of the cloud’s resources and scaling capabilities. It also refers to applications that take advantage of innovations in infrastructure driven by cloud computing. Cloud native applications today include apps that run in a cloud provider’s datacenter and on cloud native platforms on-premise.
@@ -145,8 +147,13 @@ Kubernetes provides a cluster of nodes, a group of worker machines that run cont
   - The **controller manager** components run different controller processes to ensure that the cluster’s desired state matches its current state.
   - The **cloud controller** manager integrates Kubernetes clusters with external cloud providers, embeds their logic, and links the Kubernetes API with the Cloud Provider’s API.
 - On each worker node
-  - the **kubelet** (the primary "node agent") is the agent responsible for running containers in pods, 
-  - **kube-proxy** is the component that adds the necessary networking capabilities for communication between pods and nodes. 
+  - the **kubelet** (the primary "node agent") is the agent responsible for running containers in pods,
+  - **kube-proxy** is the component that adds the necessary networking capabilities for communication between pods and nodes.
+
+- kubectl
+  - kubectl run; start a pod; deploy an application
+  - kubectl cluster-info
+  - kubectl get nodes; list all nodes of a cluster
 
 ## Pod
 
@@ -194,12 +201,16 @@ A Helm Chart is **a packaging format** used to define, install, upgrade, deploy,
 
 Deploying real-world applications in Kubernetes usually involves several moving parts: app containers, config maps, secrets, service accounts, and storage. Managing all of this manually becomes inefficient fast. Helm solves this by turning infrastructure into modular, repeatable packages. It reduces human error, accelerates CI/CD pipelines, and makes rollbacks as simple as a single command.
 
+A Helm chart describes how to manage a specific application on Kubernetes. It consists of metadata that describes the application, plus the infrastructure needed to operate it in terms of the standard Kubernetes primitives. Each chart references one or more container images that contain the application code to be run.
+
+Despite the fact we can run application containers using the Kubernetes command line (kubectl), the easiest way to run workloads in Kubernetes is using the ready-made Helm charts.
+
 How a Helm Chart Is Organized
 
 - Each Helm Chart is a folder that follows a clear structure, making it easier to manage, update, and reuse across environments.
-- **Chart.yaml** – It contains metadata like the chart name, version, and a brief description.
-- **values.yaml** – Defines default configuration values that can be overridden at deployment.
-- **templates/** – Holds the actual Kubernetes manifest templates using Go templating.
+- **Chart.yaml** – It contains metadata info like the chart name, version, and a brief description.
+- **values.yaml** – Defines default configuration values that can be overridden at deployment. the template files collect deployment information from this file. It can customize the helm chart. 
+- **templates/** – Holds the actual Kubernetes manifest templates using Go templating. stores the actual yaml files. It holds all the configurations for the application. It also includes a tests directory. 
 - **charts/** – (Optional) Includes subcharts or external dependencies that the main chart relies on.
 
 Helm is built for scaling, upgrading, and maintaining production environments.
@@ -224,6 +235,11 @@ commands:
 - helm rollback (prod): rollback to previous state
 - helm package: package the chart and deploy it to Github, S3, or any chart repository
 - helm uninstall (dev): uninstall the helm release; it will remove all of the resources associated with the last release of the chart.
+- helm create (mychart): create a chart
+
+For Kubernetes, it is equivalent to yum(Red Hat), apt(Debian、Ubuntu), or homebrew(macOS, Linux).
+
+A *release* represent an instance of a chart running in a Kubernetes cluster. Each release has its own unique name. 
 
 ## Terraform
 
