@@ -1,0 +1,186 @@
+
+controlplane ~ ➜  kubectl version 
+Client Version: v1.34.1+k3s1
+Kustomize Version: v5.7.1
+Server Version: v1.34.1+k3s1
+
+controlplane ~ ✖ kubectl cluster-info 
+Kubernetes control plane is running at https://127.0.0.1:6443
+CoreDNS is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+Metrics-server is running at https://127.0.0.1:6443/api/v1/namespaces/kube-system/services/https:metrics-server:https/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+
+
+controlplane ~ ➜  kubectl get pods
+No resources found in default namespace.
+
+controlplane ~ ➜  kubectl get pods --namespace kube-system
+NAME                                      READY   STATUS      RESTARTS   AGE
+coredns-7896679cc-jjsvt                   1/1     Running     0          12m
+helm-install-traefik-7kt46                0/1     Completed   2          12m
+helm-install-traefik-crd-9r9gv            0/1     Completed   0          12m
+local-path-provisioner-578895bd58-xkgrf   1/1     Running     0          12m
+metrics-server-7b9c9c4b9c-4dn6m           1/1     Running     0          12m
+svclb-traefik-2a33a228-v6tpg              2/2     Running     0          12m
+traefik-6f986b958c-c4bwn                  1/1     Running     0          12m
+
+
+controlplane ~ ➜  kubectl get nodes
+NAME           STATUS   ROLES           AGE   VERSION
+controlplane   Ready    control-plane   17m   v1.34.1+k3s1
+
+controlplane ~ ➜  kubectl config view
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority-data: DATA+OMITTED
+    server: https://127.0.0.1:6443
+  name: default
+contexts:
+- context:
+    cluster: default
+    user: default
+  name: default
+current-context: default
+kind: Config
+users:
+- name: default
+  user:
+    client-certificate-data: DATA+OMITTED
+    client-key-data: DATA+OMITTED
+
+controlplane ~ ➜  kubectl get pods
+NAME            READY   STATUS    RESTARTS   AGE
+newpods-4bc9n   1/1     Running   0          4m42s
+newpods-86v62   1/1     Running   0          4m42s
+newpods-dhn52   1/1     Running   0          4m42s
+
+controlplane ~ ➜  kubectl get pods -o wide
+NAME            READY   STATUS    RESTARTS   AGE     IP           NODE           NOMINATED NODE   READINESS GATES
+newpods-4bc9n   1/1     Running   0          4m53s   10.22.0.11   controlplane   <none>           <none>
+newpods-86v62   1/1     Running   0          4m53s   10.22.0.10   controlplane   <none>           <none>
+newpods-dhn52   1/1     Running   0          4m53s   10.22.0.9    controlplane   <none>           <none>
+
+
+controlplane ~ ✖ kubectl describe pod newpods-4bc9n
+Name:             newpods-4bc9n
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             controlplane/192.168.8.160
+Start Time:       Fri, 05 Dec 2025 01:40:00 +0000
+Labels:           tier=busybox
+Annotations:      <none>
+Status:           Running
+IP:               10.22.0.11
+IPs:
+  IP:           10.22.0.11
+Controlled By:  ReplicaSet/newpods
+Containers:
+  busybox:
+    Container ID:  containerd://ea7b2c6fa9300d16fabcfa3c25ef3d59d71c66c30c4e50b1edc9636edc0c6e4a
+    Image:         busybox
+    Image ID:      docker.io/library/busybox@sha256:e3652a00a2fabd16ce889f0aa32c38eec347b997e73bd09e69c962ec7f8732ee
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sleep
+      1000
+    State:          Running
+      Started:      Fri, 05 Dec 2025 01:40:01 +0000
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-z7lqr (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-z7lqr:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age    From               Message
+  ----    ------     ----   ----               -------
+  Normal  Scheduled  5m35s  default-scheduler  Successfully assigned default/newpods-4bc9n to controlplane
+  Normal  Pulling    5m34s  kubelet            Pulling image "busybox"
+  Normal  Pulled     5m34s  kubelet            Successfully pulled image "busybox" in 229ms (229ms including waiting). Image size: 2224358 bytes.
+  Normal  Created    5m34s  kubelet            Created container: busybox
+  Normal  Started    5m34s  kubelet            Started container busybox
+
+controlplane ~ ➜  kubectl run nginx --image=nginx
+pod/nginx created
+
+controlplane ~ ✖ kubectl get pods
+NAME            READY   STATUS    RESTARTS   AGE
+newpods-4bc9n   1/1     Running   0          10m
+newpods-86v62   1/1     Running   0          10m
+newpods-dhn52   1/1     Running   0          10m
+nginx           1/1     Running   0          3m49s
+
+controlplane ~ ➜  kubectl describe pod nginx
+Name:             nginx
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             controlplane/192.168.8.160
+Start Time:       Fri, 05 Dec 2025 01:47:03 +0000
+Labels:           run=nginx
+Annotations:      <none>
+Status:           Running
+IP:               10.22.0.12
+IPs:
+  IP:  10.22.0.12
+Containers:
+  nginx:
+    Container ID:   containerd://09e2558ac706d3a97cdf55e09f93566fdd9ff6f1ccb67587bd57a64beca265f6
+    Image:          nginx
+    Image ID:       docker.io/library/nginx@sha256:553f64aecdc31b5bf944521731cd70e35da4faed96b2b7548a3d8e2598c52a42
+    Port:           <none>
+    Host Port:      <none>
+    State:          Running
+      Started:      Fri, 05 Dec 2025 01:47:08 +0000
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-dvg92 (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-dvg92:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age    From               Message
+  ----    ------     ----   ----               -------
+  Normal  Scheduled  4m27s  default-scheduler  Successfully assigned default/nginx to controlplane
+  Normal  Pulling    4m26s  kubelet            Pulling image "nginx"
+  Normal  Pulled     4m23s  kubelet            Successfully pulled image "nginx" in 3.861s (3.861s including waiting). Image size: 59772801 bytes.
+  Normal  Created    4m23s  kubelet            Created container: nginx
+  Normal  Started    4m22s  kubelet            Started container nginx

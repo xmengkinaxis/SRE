@@ -18,6 +18,7 @@
   - [Terraform](#terraform)
   - [Terragrunt](#terragrunt)
   - [Multitenancy](#multitenancy)
+  - [YAML](#yaml)
 
 ## REFERENCE
 
@@ -138,12 +139,16 @@ Kubernetes handles service discovery and load-balances traffic between similar p
 
 Kubernetes provides a cluster of nodes, a group of worker machines that run containerized applications. Each node hosts pods that hold application workload containers. The brain of the whole system is the control plane. Each cluster consists of several components that manage the worker nodes and pods and guarantee operational continuity.
 
+A **pod** is the smallest deployable unit in Kubernetes, encapsulating one or more containers that share storage and network resources. This flexibility is essential for implementing complex applications effectively within a Kubernetes cluster.
+
+Scaling an application in Kubernetes typically involves increasing the number of Pods that run the application, ensuring better resource utilization and improved performance.
+
 [Cluster Architecture](https://kubernetes.io/docs/concepts/architecture/) and [Core Components](https://kubernetes.io/docs/concepts/overview/components/): 
 
 - Control Plane
   - The **API server** is the component exposing the Kubernetes API and operates as the front-end of the control plane by handling all the communication between other parts.
-  - The **etcd** (a distributed /etc) component is used to store all cluster data and state.
-  - The **scheduler** manages how pods are assigned to nodes and takes all the workload scheduling decisions.
+  - The **etcd** (a distributed /etc) component is used to store all cluster data and state. It is a distributed reliable key-value store used by kubernetes to store all configuration and metadata used to manage the cluster.
+  - The **scheduler** manages how pods are assigned to nodes and takes all the workload scheduling decisions. It is responsible for distributing work among multiple nodes by deciding which nodes will run specific pods. This function is crucial for optimizing resource utilization and ensuring efficient operation within a Kubernetes cluster. 
   - The **controller manager** components run different controller processes to ensure that the cluster’s desired state matches its current state.
   - The **cloud controller** manager integrates Kubernetes clusters with external cloud providers, embeds their logic, and links the Kubernetes API with the Cloud Provider’s API.
 - On each worker node
@@ -154,6 +159,14 @@ Kubernetes provides a cluster of nodes, a group of worker machines that run cont
   - kubectl run; start a pod; deploy an application
   - kubectl cluster-info
   - kubectl get nodes; list all nodes of a cluster
+  - kubectl config view; // ???
+  - kubectl get pods --namespace kube-system; // see Helm's Tiller running
+  - kubectl describe pod (ngix); // See a pod detail
+  - kubectl describe deploy tiller-deploy --namespace=kube-system
+  - kubectl apply -f pod.yaml // create(apply) the pod
+
+ **container runtime** is the underlying framework responsible for running applications within containers, such as those created with Docker.
+ **kubectl** is the command-line tool specifically designed for managing Kubernetes clusters, allowing you to interact with cluster resources and deploy applications effectively.
 
 ## Pod
 
@@ -209,9 +222,17 @@ How a Helm Chart Is Organized
 
 - Each Helm Chart is a folder that follows a clear structure, making it easier to manage, update, and reuse across environments.
 - **Chart.yaml** – It contains metadata info like the chart name, version, and a brief description.
-- **values.yaml** – Defines default configuration values that can be overridden at deployment. the template files collect deployment information from this file. It can customize the helm chart. 
-- **templates/** – Holds the actual Kubernetes manifest templates using Go templating. stores the actual yaml files. It holds all the configurations for the application. It also includes a tests directory. 
+- **values.yaml** – Defines default configuration values that can be overridden at deployment. the template files collect deployment information from this file. It can customize the helm chart.
+- **templates/** – Holds the actual Kubernetes manifest templates using Go templating. stores the actual yaml files. It holds all the configurations for the application. It also includes a tests directory. It use [Golang](https://www.geeksforgeeks.org/go-language/go/) templating format to assemble the configurations from values.yaml or command line and convert the complete configuration into a Kubernetes manifest.
 - **charts/** – (Optional) Includes subcharts or external dependencies that the main chart relies on.
+
+Helm terminologies and core components
+
+- Chart: It is a package of containing pre-configured kubernetes resources.
+- Release: It is an instance of running charts in a kubernetes resource.
+- Repository: It is a collection of charts that can be shared and stored.
+- Values: It is useful for configuration settings that can help in customizing chart deployments.
+- Helm Chart: It is a helm package manager that contains a collection of kubernetes resource definitions.
 
 Helm is built for scaling, upgrading, and maintaining production environments.
 
@@ -230,16 +251,25 @@ commands:
 - helm install --dry-run: pretend to install the manifests file and try to display the manifests files.
 - helm install prod: // kubectl create namespace prod (dev) in advance
 - kubectl get all -n prod: confirm the deployment is successful
-- helm list: check the number of releases in the host.
-- helm upgrade (prod)：if any environment needs to update with image details, versions, replica count, storage memory etc…, we can do that with upgrade by without bringing down the original state
+- helm list: check the number of releases in the host; list all Helm releases.
+- helm upgrade (prod)：if any environment needs to update with image details, versions, replica count, storage memory etc…, we can do that with upgrade by without bringing down the original state; update a Helm release.
 - helm rollback (prod): rollback to previous state
 - helm package: package the chart and deploy it to Github, S3, or any chart repository
 - helm uninstall (dev): uninstall the helm release; it will remove all of the resources associated with the last release of the chart.
 - helm create (mychart): create a chart
+- helm version: show both the client and server version
+- helm init; // install on MacOs: brew install kubernetes-helm
+- helm repo list
+- helm repo search (mariadb)
+- helm install stable/mariadb
+- helm status // ???
+- helm delete --deleted (--all)/ ???
 
 For Kubernetes, it is equivalent to yum(Red Hat), apt(Debian、Ubuntu), or homebrew(macOS, Linux).
 
 A *release* represent an instance of a chart running in a Kubernetes cluster. Each release has its own unique name. 
+
+[In Helm 3, Tiller will be removed](https://helm.sh/blog/helm-3-preview-pt2/), because the tiller inside a K8s cluster has too much poewr such as CREATE/UPDATE/DELETE and it causes some security issues. So, the Helm 3 client library will communicate directly with the Kubernetes API server not via Tiller.
 
 ## Terraform
 
@@ -283,3 +313,20 @@ Without multitenancy, each tenant would need a dedicated software installation. 
 Multitenant software provides each tenant a segregated environment (work data, settings, list of credentials, etc.), simultaneously serving multiple tenants. From a tenant’s perspective, each has its dedicated software installation, although, in reality, they are all sharing one.
 
 With multitenant software, tenants share the resources of one installation without affecting each other or only in predefined and controlled ways.
+
+## YAML
+
+Compared with XML and JSON, YAML is much simpler in presenting the same data.
+
+Must have a space after colon ":" in Key-Value Pair. Sibling should have the same dents, but how many spaces do not matter.  
+
+YAML in Kubernetes:
+
+- always contains four keys and they are the root/top properties.
+  - apiVersion: v1 of Kubernetes objects, like Pod
+  - kind: type of object to create; e.g. Pod, Server, Deployment
+  - metadata: data about the object; e.g. name, labels (dict); after labeling, it is easy to group these pods
+  - spec: specification on the additional information for the object; depend on the object; a list of containers
+- fe
+
+can use some extension or plugin to hight the syntax error or validate the content 
