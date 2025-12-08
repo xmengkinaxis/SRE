@@ -121,7 +121,7 @@ Events:
   Normal  Created    5m34s  kubelet            Created container: busybox
   Normal  Started    5m34s  kubelet            Started container busybox
 
-controlplane ~ ➜  kubectl run nginx --image=nginx
+controlplane ~ ➜ kubectl run nginx --image=nginx
 pod/nginx created
 
 controlplane ~ ✖ kubectl get pods
@@ -184,3 +184,1301 @@ Events:
   Normal  Pulled     4m23s  kubelet            Successfully pulled image "nginx" in 3.861s (3.861s including waiting). Image size: 59772801 bytes.
   Normal  Created    4m23s  kubelet            Created container: nginx
   Normal  Started    4m22s  kubelet            Started container nginx
+
+
+controlplane ~ ➜  kubectl get pod newpods-4bc9n -o yaml | grep image
+    image: busybox
+    imagePullPolicy: Always
+    image: docker.io/library/busybox:latest
+    imageID: docker.io/library/busybox@sha256:e3652a00a2fabd16ce889f0aa32c38eec347b997e73bd09e69c962ec7f8732ee
+
+controlplane ~ ✖ kubectl get pods -o wide
+NAME            READY   STATUS    RESTARTS      AGE   IP           NODE           NOMINATED NODE   READINESS GATES
+newpods-4bc9n   1/1     Running   1 (97s ago)   18m   10.22.0.11   controlplane   <none>           <none>
+newpods-86v62   1/1     Running   1 (97s ago)   18m   10.22.0.10   controlplane   <none>           <none>
+newpods-dhn52   1/1     Running   1 (97s ago)   18m   10.22.0.9    controlplane   <none>           <none>
+nginx           1/1     Running   0             11m   10.22.0.12   controlplane   <none>           <none>
+
+
+controlplane ~ ➜  kubectl get pods -o wide
+NAME            READY   STATUS             RESTARTS        AGE   IP           NODE           NOMINATED NODE   READINESS GATES
+newpods-4bc9n   1/1     Running            1 (2m27s ago)   19m   10.22.0.11   controlplane   <none>           <none>
+newpods-86v62   1/1     Running            1 (2m27s ago)   19m   10.22.0.10   controlplane   <none>           <none>
+newpods-dhn52   1/1     Running            1 (2m27s ago)   19m   10.22.0.9    controlplane   <none>           <none>
+nginx           1/1     Running            0               12m   10.22.0.12   controlplane   <none>           <none>
+webapp          1/2     ImagePullBackOff   0               21s   10.22.0.13   controlplane   <none>           <none>
+
+controlplane ~ ➜  kubectl describe pod webapp
+Name:             webapp
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             controlplane/192.168.8.160
+Start Time:       Fri, 05 Dec 2025 01:58:47 +0000
+Labels:           <none>
+Annotations:      <none>
+Status:           Pending
+IP:               10.22.0.13
+IPs:
+  IP:  10.22.0.13
+Containers:
+  nginx:
+    Container ID:   containerd://4488dbabfa8a13d67864c7ae2fe3bf9792e880089bdb85cd3ca88c07cdb92be4
+    Image:          nginx
+    Image ID:       docker.io/library/nginx@sha256:553f64aecdc31b5bf944521731cd70e35da4faed96b2b7548a3d8e2598c52a42
+    Port:           <none>
+    Host Port:      <none>
+    State:          Running
+      Started:      Fri, 05 Dec 2025 01:58:48 +0000
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-sjm5l (ro)
+  agentx:
+    Container ID:   
+    Image:          agentx
+    Image ID:       
+    Port:           <none>
+    Host Port:      <none>
+    State:          Waiting
+      Reason:       ImagePullBackOff
+    Ready:          False
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-sjm5l (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       False 
+  ContainersReady             False 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-sjm5l:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  47s                default-scheduler  Successfully assigned default/webapp to controlplane
+  Normal   Pulling    47s                kubelet            Pulling image "nginx"
+  Normal   Pulled     47s                kubelet            Successfully pulled image "nginx" in 143ms (143ms including waiting). Image size: 59772801 bytes.
+  Normal   Created    47s                kubelet            Created container: nginx
+  Normal   Started    47s                kubelet            Started container nginx
+  Normal   BackOff    17s (x2 over 45s)  kubelet            Back-off pulling image "agentx"
+  Warning  Failed     17s (x2 over 45s)  kubelet            Error: ImagePullBackOff
+  Normal   Pulling    3s (x3 over 47s)   kubelet            Pulling image "agentx"
+  Warning  Failed     2s (x3 over 46s)   kubelet            Failed to pull image "agentx": failed to pull and unpack image "docker.io/library/agentx:latest": failed to resolve reference "docker.io/library/agentx:latest": pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed
+  Warning  Failed     2s (x3 over 46s)   kubelet            Error: ErrImagePull
+
+controlplane ~ ✖ kubectl delete pod webapp
+pod "webapp" deleted from default namespace
+
+controlplane ~ ➜  cat redis.yaml
+apiVersion: v1
+kind: Pod
+metadata: 
+  name: redis
+spec: 
+  containers: 
+  - name: redis
+    image: redis123
+
+controlplane ~ ➜  kubectl apply -f redis.yaml 
+pod/redis created
+
+controlplane ~ ➜  kubectl get pods
+NAME            READY   STATUS             RESTARTS      AGE
+newpods-4bc9n   1/1     Running            2 (97s ago)   34m
+newpods-86v62   1/1     Running            2 (97s ago)   34m
+newpods-dhn52   1/1     Running            2 (97s ago)   34m
+nginx           1/1     Running            0             27m
+redis           0/1     ImagePullBackOff   0             20s
+
+
+controlplane ~ ➜  kubectl describe pod redis
+Name:             redis
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             controlplane/192.168.8.160
+Start Time:       Fri, 05 Dec 2025 02:14:39 +0000
+Labels:           <none>
+Annotations:      <none>
+Status:           Pending
+IP:               10.22.0.15
+IPs:
+  IP:  10.22.0.15
+Containers:
+  redis:
+    Container ID:   
+    Image:          redis123
+    Image ID:       
+    Port:           <none>
+    Host Port:      <none>
+    State:          Waiting
+      Reason:       ImagePullBackOff
+    Ready:          False
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-pd5c8 (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       False 
+  ContainersReady             False 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-pd5c8:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  69s                default-scheduler  Successfully assigned default/redis to controlplane
+  Normal   Pulling    29s (x3 over 68s)  kubelet            Pulling image "redis123"
+  Warning  Failed     29s (x3 over 68s)  kubelet            Failed to pull image "redis123": failed to pull and unpack image "docker.io/library/redis123:latest": failed to resolve reference "docker.io/library/redis123:latest": pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed
+  Warning  Failed     29s (x3 over 68s)  kubelet            Error: ErrImagePull
+  Normal   BackOff    4s (x4 over 68s)   kubelet            Back-off pulling image "redis123"
+  Warning  Failed     4s (x4 over 68s)   kubelet            Error: ImagePullBackOff
+
+
+controlplane ~ ✖ kubectl apply -f redis.yaml 
+pod/redis configured
+
+controlplane ~ ➜  kubectl get pods
+NAME            READY   STATUS    RESTARTS        AGE
+newpods-4bc9n   1/1     Running   2 (6m55s ago)   40m
+newpods-86v62   1/1     Running   2 (6m55s ago)   40m
+newpods-dhn52   1/1     Running   2 (6m55s ago)   40m
+nginx           1/1     Running   0               33m
+redis           1/1     Running   0               5m38s
+
+controlplane ~ ➜  kubectl describe pod redis
+Name:             redis
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             controlplane/192.168.8.160
+Start Time:       Fri, 05 Dec 2025 02:14:39 +0000
+Labels:           <none>
+Annotations:      <none>
+Status:           Running
+IP:               10.22.0.15
+IPs:
+  IP:  10.22.0.15
+Containers:
+  redis:
+    Container ID:   containerd://d1634962454eaf665f749195d313b5b97c719bd297702ca847a30434f8bf9ca9
+    Image:          redis
+    Image ID:       docker.io/library/redis@sha256:43355efd22490e31ca14b9d569367d05121e2be61fd8e47937563ae2a80952ae
+    Port:           <none>
+    Host Port:      <none>
+    State:          Running
+      Started:      Fri, 05 Dec 2025 02:20:14 +0000
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-pd5c8 (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-pd5c8:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                    From               Message
+  ----     ------     ----                   ----               -------
+  Normal   Scheduled  5m46s                  default-scheduler  Successfully assigned default/redis to controlplane
+  Normal   Pulling    2m46s (x5 over 5m46s)  kubelet            Pulling image "redis123"
+  Warning  Failed     2m46s (x5 over 5m46s)  kubelet            Failed to pull image "redis123": failed to pull and unpack image "docker.io/library/redis123:latest": failed to resolve reference "docker.io/library/redis123:latest": pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed
+  Warning  Failed     2m46s (x5 over 5m46s)  kubelet            Error: ErrImagePull
+  Normal   BackOff    33s (x21 over 5m46s)   kubelet            Back-off pulling image "redis123"
+  Warning  Failed     33s (x21 over 5m46s)   kubelet            Error: ImagePullBackOff
+
+  
+controlplane ~ ✖ kubectl describe pod redis | awk '/^Events:/,/^$/'
+Events:
+  Type     Reason     Age                    From               Message
+  ----     ------     ----                   ----               -------
+  Normal   Scheduled  8m6s                   default-scheduler  Successfully assigned default/redis to controlplane
+  Normal   Pulling    5m6s (x5 over 8m6s)    kubelet            Pulling image "redis123"
+  Warning  Failed     5m6s (x5 over 8m6s)    kubelet            Failed to pull image "redis123": failed to pull and unpack image "docker.io/library/redis123:latest": failed to resolve reference "docker.io/library/redis123:latest": pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed
+  Warning  Failed     5m6s (x5 over 8m6s)    kubelet            Error: ErrImagePull
+  Normal   BackOff    2m53s (x21 over 8m6s)  kubelet            Back-off pulling image "redis123"
+  Warning  Failed     2m53s (x21 over 8m6s)  kubelet            Error: ImagePullBackOff
+
+
+controlplane ~ ➜  kubectl get pods
+No resources found in default namespace.
+
+controlplane ~ ➜  kubectl get ReplicaSets
+No resources found in default namespace.
+
+controlplane ~ ➜  kubectl get ReplicaSets
+NAME              DESIRED   CURRENT   READY   AGE
+new-replica-set   4         4         0       14s
+
+
+controlplane ~ ✖ kubectl describe ReplicaSet new-replica-set
+Name:         new-replica-set
+Namespace:    default
+Selector:     name=busybox-pod
+Labels:       <none>
+Annotations:  <none>
+Replicas:     4 current / 4 desired
+Pods Status:  0 Running / 4 Waiting / 0 Succeeded / 0 Failed
+Pod Template:
+  Labels:  name=busybox-pod
+  Containers:
+   busybox-container:
+    Image:      busybox777
+    Port:       <none>
+    Host Port:  <none>
+    Command:
+      sh
+      -c
+      echo Hello Kubernetes! && sleep 3600
+    Environment:   <none>
+    Mounts:        <none>
+  Volumes:         <none>
+  Node-Selectors:  <none>
+  Tolerations:     <none>
+Events:
+  Type    Reason            Age    From                   Message
+  ----    ------            ----   ----                   -------
+  Normal  SuccessfulCreate  2m16s  replicaset-controller  Created pod: new-replica-set-4mfgf
+  Normal  SuccessfulCreate  2m16s  replicaset-controller  Created pod: new-replica-set-9f6x8
+  Normal  SuccessfulCreate  2m16s  replicaset-controller  Created pod: new-replica-set-zwjx9
+  Normal  SuccessfulCreate  2m16s  replicaset-controller  Created pod: new-replica-set-2lsgh
+
+
+controlplane ~ ➜  kubectl get pods
+NAME                    READY   STATUS             RESTARTS   AGE
+new-replica-set-2lsgh   0/1     ImagePullBackOff   0          4m45s
+new-replica-set-4mfgf   0/1     ImagePullBackOff   0          4m45s
+new-replica-set-9f6x8   0/1     ImagePullBackOff   0          4m45s
+new-replica-set-zwjx9   0/1     ImagePullBackOff   0          4m45s
+
+
+controlplane ~ ✖ kubectl describe pod new-replica-set-2lsgh
+Name:             new-replica-set-2lsgh
+Namespace:        default
+Priority:         0
+Service Account:  default
+Node:             controlplane/192.168.48.125
+Start Time:       Sun, 07 Dec 2025 22:11:37 +0000
+Labels:           name=busybox-pod
+Annotations:      <none>
+Status:           Pending
+IP:               10.22.0.10
+IPs:
+  IP:           10.22.0.10
+Controlled By:  ReplicaSet/new-replica-set
+Containers:
+  busybox-container:
+    Container ID:  
+    Image:         busybox777
+    Image ID:      
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sh
+      -c
+      echo Hello Kubernetes! && sleep 3600
+    State:          Waiting
+      Reason:       ErrImagePull
+    Ready:          False
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-xwfkm (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       False 
+  ContainersReady             False 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-xwfkm:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age                    From               Message
+  ----     ------     ----                   ----               -------
+  Normal   Scheduled  6m16s                  default-scheduler  Successfully assigned default/new-replica-set-2lsgh to controlplane
+  Normal   Pulling    3m10s (x5 over 6m17s)  kubelet            Pulling image "busybox777"
+  Warning  Failed     3m10s (x5 over 6m16s)  kubelet            Failed to pull image "busybox777": failed to pull and unpack image "docker.io/library/busybox777:latest": failed to resolve reference "docker.io/library/busybox777:latest": pull access denied, repository does not exist or may require authorization: server message: insufficient_scope: authorization failed
+  Warning  Failed     3m10s (x5 over 6m16s)  kubelet            Error: ErrImagePull
+  Normal   BackOff    62s (x21 over 6m16s)   kubelet            Back-off pulling image "busybox777"
+  Warning  Failed     62s (x21 over 6m16s)   kubelet            Error: ImagePullBackOff
+
+
+controlplane ~ ➜  kubectl get pods
+NAME                    READY   STATUS             RESTARTS   AGE
+new-replica-set-2lsgh   0/1     ImagePullBackOff   0          6m45s
+new-replica-set-4mfgf   0/1     ImagePullBackOff   0          6m45s
+new-replica-set-9f6x8   0/1     ImagePullBackOff   0          6m45s
+new-replica-set-zwjx9   0/1     ImagePullBackOff   0          6m45s
+
+controlplane ~ kubectl delete pod new-replica-set-2lsgh
+pod "new-replica-set-2lsgh" deleted from default namespace
+
+
+controlplane ~ ➜  kubectl get pods
+NAME                    READY   STATUS             RESTARTS   AGE
+new-replica-set-4mfgf   0/1     ImagePullBackOff   0          8m35s
+new-replica-set-5vx2c   0/1     ImagePullBackOff   0          46s
+new-replica-set-9f6x8   0/1     ImagePullBackOff   0          8m35s
+new-replica-set-zwjx9   0/1     ImagePullBackOff   0          8m35s
+
+
+controlplane ~ ➜  vim replicaset-definition-2.yaml
+
+controlplane ~ ➜  kubectl apply -f replicaset-definition-2.yaml
+replicaset.apps/replicaset-2 created
+
+controlplane ~ ➜  cat replicaset-definition-2.yaml
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: replicaset-2
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      tier: nginx 
+  template:
+    metadata:
+      labels:
+        tier: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+
+
+controlplane ~ ➜  kubectl get pods
+NAME                    READY   STATUS             RESTARTS   AGE
+new-replica-set-4mfgf   0/1     ImagePullBackOff   0          22m
+new-replica-set-5vx2c   0/1     ImagePullBackOff   0          14m
+new-replica-set-9f6x8   0/1     ImagePullBackOff   0          22m
+new-replica-set-zwjx9   0/1     ImagePullBackOff   0          22m
+replicaset-1-jfcxl      1/1     Running            0          4m28s
+replicaset-1-q9rht      1/1     Running            0          4m28s
+replicaset-2-24rl5      1/1     Running            0          39s
+replicaset-2-hdwx2      1/1     Running            0          39s
+
+
+controlplane ~ ➜  kubectl get ReplicaSets
+NAME              DESIRED   CURRENT   READY   AGE
+new-replica-set   4         4         0       23m
+replicaset-1      2         2         2       5m18s
+replicaset-2      2         2         2       89s
+
+
+controlplane ~ ✖ kubectl delete ReplicaSets replicaset-1
+replicaset.apps "replicaset-1" deleted from default namespace
+
+controlplane ~ ➜  kubectl delete ReplicaSets replicaset-2
+replicaset.apps "replicaset-2" deleted from default namespace
+
+controlplane ~ ➜  kubectl get ReplicaSets
+NAME              DESIRED   CURRENT   READY   AGE
+new-replica-set   4         4         0       23m
+
+controlplane ~ ➜  kubectl get pods
+NAME                    READY   STATUS             RESTARTS   AGE
+new-replica-set-4mfgf   0/1     ImagePullBackOff   0          24m
+new-replica-set-5vx2c   0/1     ImagePullBackOff   0          16m
+new-replica-set-9f6x8   0/1     ImagePullBackOff   0          24m
+new-replica-set-zwjx9   0/1     ImagePullBackOff   0          24m
+
+controlplane ~ ➜  kubectl get ReplicaSets
+NAME              DESIRED   CURRENT   READY   AGE
+new-replica-set   4         4         0       25m
+
+controlplane ~ ➜  kubectl delete ReplicaSets new-replica-set
+replicaset.apps "new-replica-set" deleted from default namespace
+
+controlplane ~ ➜  kubectl get ReplicaSets
+No resources found in default namespace.
+
+controlplane ~ ➜  kubectl get pods
+No resources found in default namespace.
+
+controlplane ~ ➜  cat new-replica-set.yaml
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  creationTimestamp: "2025-12-07T22:11:37Z"
+  generation: 1
+  name: new-replica-set
+  namespace: default
+  resourceVersion: "1394"
+  uid: f2f42d05-da93-490a-93c0-c7637c5feac4
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      name: busybox-pod
+  template:
+    metadata:
+      labels:
+        name: busybox-pod
+    spec:
+      containers:
+      - command:
+        - sh
+        - -c
+        - echo Hello Kubernetes! && sleep 3600
+        image: busybox
+        imagePullPolicy: Always
+        name: busybox-container
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  fullyLabeledReplicas: 4
+  observedGeneration: 1
+  replicas: 4
+
+controlplane ~ ➜  kubectl apply -f new-replica-set.yaml --dry-run
+W1207 22:38:48.450344   14210 helpers.go:731] --dry-run is deprecated and can be replaced with --dry-run=client.
+replicaset.apps/new-replica-set created (dry run)
+
+controlplane ~ ➜  kubectl apply -f new-replica-set.yaml --dry-run=client
+replicaset.apps/new-replica-set created (dry run)
+
+controlplane ~ ➜  kubectl apply -f new-replica-set.yaml 
+replicaset.apps/new-replica-set created
+
+controlplane ~ ➜  kubectl get ReplicaSets
+NAME              DESIRED   CURRENT   READY   AGE
+new-replica-set   4         4         4       6s
+
+controlplane ~ ➜  kubectl get pods
+NAME                    READY   STATUS    RESTARTS   AGE
+new-replica-set-25s9z   1/1     Running   0          10s
+new-replica-set-6b8b5   1/1     Running   0          10s
+new-replica-set-cbssr   1/1     Running   0          10s
+new-replica-set-sr44v   1/1     Running   0          10s
+
+controlplane ~ ✖ kubectl scale --replicas=5 ReplicaSets new-replica-set
+replicaset.apps/new-replica-set scaled
+
+controlplane ~ ➜  kubectl get ReplicaSets 
+NAME              DESIRED   CURRENT   READY   AGE
+new-replica-set   5         5         5       4m24s
+
+
+controlplane ~ ✖ kubectl edit ReplicaSets new-replica-set
+replicaset.apps/new-replica-set edited
+
+controlplane ~ ➜  kubectl get ReplicaSets 
+NAME              DESIRED   CURRENT   READY   AGE
+new-replica-set   4         4         4       6m3s
+
+controlplane ~ ➜  kubectl get pods
+NAME                    READY   STATUS        RESTARTS   AGE
+new-replica-set-25s9z   1/1     Running       0          6m6s
+new-replica-set-6b8b5   1/1     Running       0          6m6s
+new-replica-set-cbssr   1/1     Running       0          6m6s
+new-replica-set-lm77r   1/1     Terminating   0          109s
+new-replica-set-sr44v   1/1     Running       0          6m6s
+
+
+controlplane ~ ➜  kubectl edit ReplicaSets new-replica-set
+replicaset.apps/new-replica-set edited
+
+controlplane ~ ➜  kubectl get ReplicaSets 
+NAME              DESIRED   CURRENT   READY   AGE
+new-replica-set   5         5         5       7m9s
+
+controlplane ~ ➜  kubectl get pods
+NAME                    READY   STATUS    RESTARTS   AGE
+new-replica-set-25s9z   1/1     Running   0          7m13s
+new-replica-set-6b8b5   1/1     Running   0          7m13s
+new-replica-set-cbssr   1/1     Running   0          7m13s
+new-replica-set-n6cvh   1/1     Running   0          8s
+new-replica-set-sr44v   1/1     Running   0          7m13s
+
+
+controlplane ~ ➜  kubectl edit ReplicaSets new-replica-set
+replicaset.apps/new-replica-set edited
+
+controlplane ~ ➜  kubectl get pods
+NAME                    READY   STATUS        RESTARTS   AGE
+new-replica-set-25s9z   1/1     Running       0          8m9s
+new-replica-set-6b8b5   1/1     Running       0          8m9s
+new-replica-set-cbssr   1/1     Terminating   0          8m9s
+new-replica-set-n6cvh   1/1     Terminating   0          64s
+new-replica-set-sr44v   1/1     Running       0          8m9s
+
+controlplane ~ ➜  kubectl get ReplicaSets 
+NAME              DESIRED   CURRENT   READY   AGE
+new-replica-set   3         3         3       8m13s
+
+controlplane ~ ➜  kubectl scale --replicas=2 ReplicaSets new-replica-set
+replicaset.apps/new-replica-set scaled
+
+controlplane ~ ➜  kubectl get ReplicaSets 
+NAME              DESIRED   CURRENT   READY   AGE
+new-replica-set   2         2         2       8m48s
+
+controlplane ~ ➜  kubectl get pods
+NAME                    READY   STATUS        RESTARTS   AGE
+new-replica-set-25s9z   1/1     Running       0          8m51s
+new-replica-set-6b8b5   1/1     Terminating   0          8m51s
+new-replica-set-sr44v   1/1     Running       0          8m51s
+
+
+# kubectl create -f /root/replicaset-definition-1.yaml
+# kubectl delete rs replicaset-1
+
+controlplane ~ ➜  kubectl get all 
+NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+service/kubernetes   ClusterIP   10.43.0.1    <none>        443/TCP   11m
+
+controlplane ~ ➜  kubectl get pods
+No resources found in default namespace.
+
+controlplane ~ ➜  kubectl get ReplicaSets
+No resources found in default namespace.
+
+controlplane ~ ➜  kubectl get rs
+No resources found in default namespace.
+
+
+controlplane ~ ➜  kubectl get deployments
+No resources found in default namespace.
+
+controlplane ~ ➜  kubectl explain replicaset
+GROUP:      apps
+KIND:       ReplicaSet
+VERSION:    v1
+
+DESCRIPTION:
+    ReplicaSet ensures that a specified number of pod replicas are running at
+    any given time.
+    
+FIELDS:
+  apiVersion    <string>
+    APIVersion defines the versioned schema of this representation of an object.
+    Servers should convert recognized schemas to the latest internal value, and
+    may reject unrecognized values. More info:
+    https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+
+  kind  <string>
+    Kind is a string value representing the REST resource this object
+    represents. Servers may infer this from the endpoint the client submits
+    requests to. Cannot be updated. In CamelCase. More info:
+    https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+
+  metadata      <ObjectMeta>
+    If the Labels of a ReplicaSet are empty, they are defaulted to be the same
+    as the Pod(s) that the ReplicaSet manages. Standard object's metadata. More
+    info:
+    https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+
+  spec  <ReplicaSetSpec>
+    Spec defines the specification of the desired behavior of the ReplicaSet.
+    More info:
+    https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+
+  status        <ReplicaSetStatus>
+    Status is the most recently observed status of the ReplicaSet. This data may
+    be out of date by some window of time. Populated by the system. Read-only.
+    More info:
+    https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+
+
+controlplane ~ ➜  kubectl explain pod
+KIND:       Pod
+VERSION:    v1
+
+DESCRIPTION:
+    Pod is a collection of containers that can run on a host. This resource is
+    created by clients and scheduled onto hosts.
+    
+FIELDS:
+  apiVersion    <string>
+    APIVersion defines the versioned schema of this representation of an object.
+    Servers should convert recognized schemas to the latest internal value, and
+    may reject unrecognized values. More info:
+    https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+
+  kind  <string>
+    Kind is a string value representing the REST resource this object
+    represents. Servers may infer this from the endpoint the client submits
+    requests to. Cannot be updated. In CamelCase. More info:
+    https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+
+  metadata      <ObjectMeta>
+    Standard object's metadata. More info:
+    https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+
+  spec  <PodSpec>
+    Specification of the desired behavior of the pod. More info:
+    https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+
+  status        <PodStatus>
+    Most recently observed status of the pod. This data may not be up to date.
+    Populated by the system. Read-only. More info:
+    https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#spec-and-status
+
+
+
+controlplane ~ ➜  kubectl explain deployment
+GROUP:      apps
+KIND:       Deployment
+VERSION:    v1
+
+DESCRIPTION:
+    Deployment enables declarative updates for Pods and ReplicaSets.
+    
+FIELDS:
+  apiVersion    <string>
+    APIVersion defines the versioned schema of this representation of an object.
+    Servers should convert recognized schemas to the latest internal value, and
+    may reject unrecognized values. More info:
+    https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+
+  kind  <string>
+    Kind is a string value representing the REST resource this object
+    represents. Servers may infer this from the endpoint the client submits
+    requests to. Cannot be updated. In CamelCase. More info:
+    https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+
+  metadata      <ObjectMeta>
+    Standard object's metadata. More info:
+    https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#metadata
+
+  spec  <DeploymentSpec>
+    Specification of the desired behavior of the Deployment.
+
+  status        <DeploymentStatus>
+    Most recently observed status of the Deployment.
+
+
+
+controlplane ~ ➜  kubectl get deployments
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+frontend-deployment   0/4     4            0           81s
+
+
+controlplane ~ ➜  kubectl get all
+NAME                                       READY   STATUS             RESTARTS   AGE
+pod/frontend-deployment-557f78f544-6vp77   0/1     ImagePullBackOff   0          2m39s
+pod/frontend-deployment-557f78f544-7k5pl   0/1     ImagePullBackOff   0          2m39s
+pod/frontend-deployment-557f78f544-cpkcj   0/1     ImagePullBackOff   0          2m39s
+pod/frontend-deployment-557f78f544-k2522   0/1     ImagePullBackOff   0          2m39s
+
+NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+service/kubernetes   ClusterIP   10.43.0.1    <none>        443/TCP   16m
+
+NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/frontend-deployment   0/4     4            0           2m39s
+
+NAME                                             DESIRED   CURRENT   READY   AGE
+replicaset.apps/frontend-deployment-557f78f544   4         4         0       2m39s
+
+controlplane ~ ➜  kubectl get services
+NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+kubernetes   ClusterIP   10.43.0.1    <none>        443/TCP   17m
+
+
+controlplane ~ ➜  vim deployment-definition-1.yaml 
+
+controlplane ~ ➜  kubectl get deployments
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+frontend-deployment   0/4     4            0           7m15s
+
+controlplane ~ ➜  kubectl create -f  deployment-definition-1.yaml 
+deployment.apps/deployment-1 created
+
+controlplane ~ ➜  kubectl get deployments
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+deployment-1          2/2     2            2           46s
+frontend-deployment   0/4     4            0           8m20s
+
+controlplane ~ ➜  kubectl get all 
+NAME                                       READY   STATUS             RESTARTS   AGE
+pod/deployment-1-55bfcd7b64-hm2zn          1/1     Running            0          52s
+pod/deployment-1-55bfcd7b64-v6vdk          1/1     Running            0          52s
+pod/frontend-deployment-557f78f544-6vp77   0/1     ImagePullBackOff   0          8m26s
+pod/frontend-deployment-557f78f544-7k5pl   0/1     ImagePullBackOff   0          8m26s
+pod/frontend-deployment-557f78f544-cpkcj   0/1     ImagePullBackOff   0          8m26s
+pod/frontend-deployment-557f78f544-k2522   0/1     ImagePullBackOff   0          8m26s
+
+NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+service/kubernetes   ClusterIP   10.43.0.1    <none>        443/TCP   21m
+
+NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/deployment-1          2/2     2            2           52s
+deployment.apps/frontend-deployment   0/4     4            0           8m26s
+
+NAME                                             DESIRED   CURRENT   READY   AGE
+replicaset.apps/deployment-1-55bfcd7b64          2         2         2       52s
+replicaset.apps/frontend-deployment-557f78f544   4         4         0       8m26s
+
+
+controlplane ~ ✖ vim deployment-httpd-frontend.yaml 
+
+controlplane ~ ➜  kubectl create -f deployment-httpd-frontend.yaml 
+deployment.apps/httpd-frontend created
+
+controlplane ~ ➜  cat deployment-httpd-frontend.yaml 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: httpd-frontend 
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      name: httpd-frontend 
+  template:
+    metadata:
+      labels:
+        name: httpd-frontend 
+    spec:
+      containers:
+      - name: httpd-frontend 
+        image: httpd:2.4-alpine
+        command:
+        - sh
+        - "-c"
+        - echo Hello Kubernetes! && sleep 3600
+
+
+controlplane ~ ➜  kubectl get deployment
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+deployment-1          2/2     2            2           3m54s
+frontend-deployment   0/4     4            0           11m
+httpd-frontend        3/3     3            3           21s
+
+controlplane ~ ➜  kubectl get all
+NAME                                       READY   STATUS             RESTARTS   AGE
+pod/deployment-1-55bfcd7b64-hm2zn          1/1     Running            0          4m
+pod/deployment-1-55bfcd7b64-v6vdk          1/1     Running            0          4m
+pod/frontend-deployment-557f78f544-6vp77   0/1     ImagePullBackOff   0          11m
+pod/frontend-deployment-557f78f544-7k5pl   0/1     ImagePullBackOff   0          11m
+pod/frontend-deployment-557f78f544-cpkcj   0/1     ImagePullBackOff   0          11m
+pod/frontend-deployment-557f78f544-k2522   0/1     ImagePullBackOff   0          11m
+pod/httpd-frontend-85fcd6779d-f24r7        1/1     Running            0          27s
+pod/httpd-frontend-85fcd6779d-lgcvk        1/1     Running            0          27s
+pod/httpd-frontend-85fcd6779d-xttnk        1/1     Running            0          27s
+
+NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+service/kubernetes   ClusterIP   10.43.0.1    <none>        443/TCP   25m
+
+NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/deployment-1          2/2     2            2           4m
+deployment.apps/frontend-deployment   0/4     4            0           11m
+deployment.apps/httpd-frontend        3/3     3            3           27s
+
+NAME                                             DESIRED   CURRENT   READY   AGE
+replicaset.apps/deployment-1-55bfcd7b64          2         2         2       4m
+replicaset.apps/frontend-deployment-557f78f544   4         4         0       11m
+replicaset.apps/httpd-frontend-85fcd6779d        3         3         3       27s
+
+
+# kubectl create deployment --help
+# kubectl create deployment httpd-frontend --image=httpd:2.4-alpine --replicas=3 
+
+# kubectl rollout status deployment/myapp-deployment
+# kubectl rollout history deployment/myapp-deployment
+# kubectl rollout undo deployment myapp-deployment
+# kubectl create -f deployment-definition.yaml --record # record the status of the rollout
+# kubectl set image deployment/myapp-deployment nginx-container=nginx:1.12
+
+
+controlplane ~ ➜  kubectl create deployment --help 
+Create a deployment with the specified name.
+
+Aliases:
+deployment, deploy
+
+Examples:
+  # Create a deployment named my-dep that runs the busybox image
+  kubectl create deployment my-dep --image=busybox
+  
+  # Create a deployment with a command
+  kubectl create deployment my-dep --image=busybox -- date
+  
+  # Create a deployment named my-dep that runs the nginx image with 3 replicas
+  kubectl create deployment my-dep --image=nginx --replicas=3
+  
+  # Create a deployment named my-dep that runs the busybox image and expose port 5701
+  kubectl create deployment my-dep --image=busybox --port=5701
+  
+  # Create a deployment named my-dep that runs multiple containers
+  kubectl create deployment my-dep --image=busybox:latest --image=ubuntu:latest --image=nginx
+
+Options:
+    --allow-missing-template-keys=true:
+        If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to
+        golang and jsonpath output formats.
+
+    --dry-run='none':
+        Must be "none", "server", or "client". If client strategy, only print the object that would be sent, without
+        sending it. If server strategy, submit server-side request without persisting the resource.
+
+    --field-manager='kubectl-create':
+        Name of the manager used to track field ownership.
+
+    --image=[]:
+        Image names to run. A deployment can have multiple images set for multi-container pod.
+
+    -o, --output='':
+        Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath,
+        jsonpath-as-json, jsonpath-file).
+
+    --port=-1:
+        The containerPort that this deployment exposes.
+
+    -r, --replicas=1:
+        Number of replicas to create. Default is 1.
+
+    --save-config=false:
+        If true, the configuration of current object will be saved in its annotation. Otherwise, the annotation will
+        be unchanged. This flag is useful when you want to perform kubectl apply on this object in the future.
+
+    --show-managed-fields=false:
+        If true, keep the managedFields when printing objects in JSON or YAML format.
+
+    --template='':
+        Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format
+        is golang templates [http://golang.org/pkg/text/template/#pkg-overview].
+
+    --validate='strict':
+        Must be one of: strict (or true), warn, ignore (or false). "true" or "strict" will use a schema to validate
+        the input and fail the request if invalid. It will perform server side validation if ServerSideFieldValidation
+        is enabled on the api-server, but will fall back to less reliable client-side validation if not. "warn" will
+        warn about unknown or duplicate fields without blocking the request if server-side field validation is enabled
+        on the API server, and behave as "ignore" otherwise. "false" or "ignore" will not perform any schema
+        validation, silently dropping any unknown or duplicate fields.
+
+Usage:
+  kubectl create deployment NAME --image=image -- [COMMAND] [args...] [options]
+
+Use "kubectl options" for a list of global command-line options (applies to all commands).
+
+
+controlplane ~ ➜  kubectl get deployment
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+frontend   4/4     4            4           93s
+
+controlplane ~ ➜  kubectl get pods
+NAME                        READY   STATUS    RESTARTS   AGE
+frontend-6b86c6b555-cjqpr   1/1     Running   0          106s
+frontend-6b86c6b555-q685t   1/1     Running   0          106s
+frontend-6b86c6b555-svps8   1/1     Running   0          106s
+frontend-6b86c6b555-xlqx7   1/1     Running   0          106s
+
+controlplane ~ ➜  kubectl get services
+NAME             TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+kubernetes       ClusterIP   10.43.0.1      <none>        443/TCP          9m52s
+webapp-service   NodePort    10.43.68.187   <none>        8080:30080/TCP   110s
+
+controlplane ~ ➜  kubectl get all
+NAME                            READY   STATUS    RESTARTS   AGE
+pod/frontend-6b86c6b555-cjqpr   1/1     Running   0          117s
+pod/frontend-6b86c6b555-q685t   1/1     Running   0          117s
+pod/frontend-6b86c6b555-svps8   1/1     Running   0          117s
+pod/frontend-6b86c6b555-xlqx7   1/1     Running   0          117s
+
+NAME                     TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+service/kubernetes       ClusterIP   10.43.0.1      <none>        443/TCP          9m59s
+service/webapp-service   NodePort    10.43.68.187   <none>        8080:30080/TCP   117s
+
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/frontend   4/4     4            4           117s
+
+NAME                                  DESIRED   CURRENT   READY   AGE
+replicaset.apps/frontend-6b86c6b555   4         4         4       117s
+
+
+controlplane ~ ➜  cat ./curl-test.sh
+for i in {1..35}; do
+   kubectl exec --namespace=kube-public curl -- sh -c 'test=`wget -qO- -T 2  http://webapp-service.default.svc.cluster.local:8080/info 2>&1` && echo "$test OK" || echo "Failed"';
+   echo ""
+done
+
+controlplane ~ ➜  ./curl-test.sh
+Hello, Application Version: v1 ; Color: blue OK
+
+Hello, Application Version: v1 ; Color: blue OK
+
+
+controlplane ~ ➜  kubectl get deployment 
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+frontend   4/4     4            4           4m37s
+
+controlplane ~ ➜  kubectl get pods
+NAME                        READY   STATUS    RESTARTS   AGE
+frontend-6b86c6b555-cjqpr   1/1     Running   0          4m41s
+frontend-6b86c6b555-q685t   1/1     Running   0          4m41s
+frontend-6b86c6b555-svps8   1/1     Running   0          4m41s
+frontend-6b86c6b555-xlqx7   1/1     Running   0          4m41s
+
+
+controlplane ~ ➜  kubectl get deployment
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+frontend   4/4     4            4           6m46s
+
+controlplane ~ ➜  kubectl describe deployment frontend
+Name:                   frontend
+Namespace:              default
+CreationTimestamp:      Mon, 08 Dec 2025 03:54:22 +0000
+Labels:                 <none>
+Annotations:            deployment.kubernetes.io/revision: 1
+Selector:               name=webapp
+Replicas:               4 desired | 4 updated | 4 total | 4 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        20
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  name=webapp
+  Containers:
+   simple-webapp:
+    Image:         kodekloud/webapp-color:v1
+    Port:          8080/TCP
+    Host Port:     0/TCP
+    Environment:   <none>
+    Mounts:        <none>
+  Volumes:         <none>
+  Node-Selectors:  <none>
+  Tolerations:     <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
+OldReplicaSets:  <none>
+NewReplicaSet:   frontend-6b86c6b555 (4/4 replicas created)
+Events:
+  Type    Reason             Age    From                   Message
+  ----    ------             ----   ----                   -------
+  Normal  ScalingReplicaSet  6m51s  deployment-controller  Scaled up replica set frontend-6b86c6b555 from 0 to 4
+
+
+controlplane ~ ✖ kubectl set image --help 
+Update existing container image(s) of resources.
+
+ Possible resources include (case insensitive):
+
+        pod (po), replicationcontroller (rc), deployment (deploy), daemonset (ds), statefulset (sts), cronjob (cj),
+replicaset (rs)
+
+Examples:
+  # Set a deployment's nginx container image to 'nginx:1.9.1', and its busybox container image to 'busybox'
+  kubectl set image deployment/nginx busybox=busybox nginx=nginx:1.9.1
+  
+  # Update all deployments' and rc's nginx container's image to 'nginx:1.9.1'
+  kubectl set image deployments,rc nginx=nginx:1.9.1 --all
+  
+  # Update image of all containers of daemonset abc to 'nginx:1.9.1'
+  kubectl set image daemonset abc *=nginx:1.9.1
+  
+  # Print result (in yaml format) of updating nginx container image from local file, without hitting the server
+  kubectl set image -f path/to/file.yaml nginx=nginx:1.9.1 --local -o yaml
+
+Options:
+    --all=false:
+        Select all resources, in the namespace of the specified resource types
+
+    --allow-missing-template-keys=true:
+        If true, ignore any errors in templates when a field or map key is missing in the template. Only applies to
+        golang and jsonpath output formats.
+
+    --dry-run='none':
+        Must be "none", "server", or "client". If client strategy, only print the object that would be sent, without
+        sending it. If server strategy, submit server-side request without persisting the resource.
+
+    --field-manager='kubectl-set':
+        Name of the manager used to track field ownership.
+
+    -f, --filename=[]:
+        Filename, directory, or URL to files identifying the resource to get from a server.
+
+    -k, --kustomize='':
+        Process the kustomization directory. This flag can't be used together with -f or -R.
+
+    --local=false:
+        If true, set image will NOT contact api-server but run locally.
+
+    -o, --output='':
+        Output format. One of: (json, yaml, name, go-template, go-template-file, template, templatefile, jsonpath,
+        jsonpath-as-json, jsonpath-file).
+
+    -R, --recursive=false:
+        Process the directory used in -f, --filename recursively. Useful when you want to manage related manifests
+        organized within the same directory.
+
+    -l, --selector='':
+        Selector (label query) to filter on, supports '=', '==', '!=', 'in', 'notin'.(e.g. -l
+        key1=value1,key2=value2,key3 in (value3)). Matching objects must satisfy all of the specified label
+        constraints.
+
+    --show-managed-fields=false:
+        If true, keep the managedFields when printing objects in JSON or YAML format.
+
+    --template='':
+        Template string or path to template file to use when -o=go-template, -o=go-template-file. The template format
+        is golang templates [http://golang.org/pkg/text/template/#pkg-overview].
+
+Usage:
+  kubectl set image (-f FILENAME | TYPE NAME) CONTAINER_NAME_1=CONTAINER_IMAGE_1 ... CONTAINER_NAME_N=CONTAINER_IMAGE_N
+[options]
+
+Use "kubectl options" for a list of global command-line options (applies to all commands).
+
+controlplane ~ ➜  kubectl set image deployment frontend simple-webapp=kodekloud/webapp-color:v2
+deployment.apps/frontend image updated
+
+
+controlplane ~ ➜  kubectl describe deployment frontend
+Name:                   frontend
+Namespace:              default
+CreationTimestamp:      Mon, 08 Dec 2025 03:54:22 +0000
+Labels:                 <none>
+Annotations:            deployment.kubernetes.io/revision: 2
+Selector:               name=webapp
+Replicas:               4 desired | 4 updated | 5 total | 3 available | 2 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        20
+RollingUpdateStrategy:  25% max unavailable, 25% max surge
+Pod Template:
+  Labels:  name=webapp
+  Containers:
+   simple-webapp:
+    Image:         kodekloud/webapp-color:v2
+    Port:          8080/TCP
+    Host Port:     0/TCP
+    Environment:   <none>
+    Mounts:        <none>
+  Volumes:         <none>
+  Node-Selectors:  <none>
+  Tolerations:     <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    ReplicaSetUpdated
+OldReplicaSets:  frontend-6b86c6b555 (1/1 replicas created)
+NewReplicaSet:   frontend-67999b9c88 (4/4 replicas created)
+Events:
+  Type    Reason             Age   From                   Message
+  ----    ------             ----  ----                   -------
+  Normal  ScalingReplicaSet  11m   deployment-controller  Scaled up replica set frontend-6b86c6b555 from 0 to 4
+  Normal  ScalingReplicaSet  33s   deployment-controller  Scaled up replica set frontend-67999b9c88 from 0 to 1
+  Normal  ScalingReplicaSet  33s   deployment-controller  Scaled down replica set frontend-6b86c6b555 from 4 to 3
+  Normal  ScalingReplicaSet  33s   deployment-controller  Scaled up replica set frontend-67999b9c88 from 1 to 2
+  Normal  ScalingReplicaSet  11s   deployment-controller  Scaled down replica set frontend-6b86c6b555 from 3 to 1
+  Normal  ScalingReplicaSet  11s   deployment-controller  Scaled up replica set frontend-67999b9c88 from 2 to 4
+
+
+
+controlplane ~ ➜  kubectl set image deployment frontend simple-webapp=kodekloud/webapp-color:v1
+deployment.apps/frontend image updated
+
+controlplane ~ ➜  ./curl-test.sh
+Hello, Application Version: v2 ; Color: green OK
+
+Hello, Application Version: v2 ; Color: green OK
+
+Hello, Application Version: v1 ; Color: blue OK
+
+Hello, Application Version: v2 ; Color: green OK
+
+Hello, Application Version: v1 ; Color: blue OK
+
+Hello, Application Version: v2 ; Color: green OK
+
+Hello, Application Version: v2 ; Color: green OK
+
+
+controlplane ~ ➜  kubectl get replicasets
+NAME                  DESIRED   CURRENT   READY   AGE
+frontend-67999b9c88   2         2         2       3m38s
+frontend-6b86c6b555   3         3         3       14m
+
+controlplane ~ ➜  kubectl get replicasets
+NAME                  DESIRED   CURRENT   READY   AGE
+frontend-67999b9c88   4         4         4       3m43s
+frontend-6b86c6b555   1         1         1       14m
+
+
+controlplane ~ ➜  kubectl get deployment
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+frontend   4/4     4            4           15m
+
+controlplane ~ ➜  kubectl get replicasets
+NAME                  DESIRED   CURRENT   READY   AGE
+frontend-67999b9c88   4         4         4       4m13s
+frontend-6b86c6b555   0         0         0       15m
+
+
+controlplane ~ ➜  kubectl set image deployment frontend simple-webapp=kodekloud/webapp-color:v1
+deployment.apps/frontend image updated
+
+controlplane ~ ➜  kubectl get deployment
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+frontend   5/4     2            3           16m
+
+controlplane ~ ➜  kubectl get replicasets
+NAME                  DESIRED   CURRENT   READY   AGE
+frontend-67999b9c88   3         3         3       4m57s
+frontend-6b86c6b555   2         2         2       16m
+
+controlplane ~ ➜  kubectl get deployment
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+frontend   5/4     4            3           16m
+
+controlplane ~ ➜  kubectl get replicasets
+NAME                  DESIRED   CURRENT   READY   AGE
+frontend-67999b9c88   1         1         1       5m27s
+frontend-6b86c6b555   4         4         4       16m
+
+controlplane ~ ➜  kubectl get deployment
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+frontend   4/4     4            4           16m
+
+controlplane ~ ➜  kubectl get replicasets
+NAME                  DESIRED   CURRENT   READY   AGE
+frontend-67999b9c88   0         0         0       5m42s
+frontend-6b86c6b555   4         4         4       16m
+
+
+
+controlplane ~ ➜  kubectl describe deployment frontend
+Name:               frontend
+Namespace:          default
+CreationTimestamp:  Mon, 08 Dec 2025 03:54:22 +0000
+Labels:             <none>
+Annotations:        deployment.kubernetes.io/revision: 7
+Selector:           name=webapp
+Replicas:           4 desired | 4 updated | 4 total | 4 available | 0 unavailable
+StrategyType:       Recreate # mxl: changed to Recreate from RollingUpdate
+MinReadySeconds:    20
+Pod Template:
+  Labels:  name=webapp
+  Containers:
+   simple-webapp:
+    Image:         kodekloud/webapp-color:v1
+    Port:          8080/TCP
+    Host Port:     0/TCP
+    Environment:   <none>
+    Mounts:        <none>
+  Volumes:         <none>
+  Node-Selectors:  <none>
+  Tolerations:     <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Progressing    True    NewReplicaSetAvailable
+  Available      True    MinimumReplicasAvailable
+OldReplicaSets:  frontend-67999b9c88 (0/0 replicas created)
+NewReplicaSet:   frontend-6b86c6b555 (4/4 replicas created)
+Events:
+  Type    Reason             Age                 From                   Message
+  ----    ------             ----                ----                   -------
+  Normal  ScalingReplicaSet  28m                 deployment-controller  Scaled up replica set frontend-6b86c6b555 from 0 to 4
+  Normal  ScalingReplicaSet  16m                 deployment-controller  Scaled up replica set frontend-67999b9c88 from 0 to 1
+  Normal  ScalingReplicaSet  16m                 deployment-controller  Scaled down replica set frontend-6b86c6b555 from 4 to 3
+  Normal  ScalingReplicaSet  16m                 deployment-controller  Scaled up replica set frontend-67999b9c88 from 2 to 4
+  Normal  ScalingReplicaSet  16m                 deployment-controller  Scaled down replica set frontend-6b86c6b555 from 1 to 0
+  Normal  ScalingReplicaSet  14m                 deployment-controller  Scaled up replica set frontend-6b86c6b555 from 1 to 2
+  Normal  ScalingReplicaSet  13m (x2 over 16m)   deployment-controller  Scaled up replica set frontend-67999b9c88 from 1 to 2
+  Normal  ScalingReplicaSet  13m (x2 over 16m)   deployment-controller  Scaled down replica set frontend-6b86c6b555 from 3 to 1
+  Normal  ScalingReplicaSet  12m (x2 over 14m)   deployment-controller  Scaled up replica set frontend-6b86c6b555 from 0 to 1
+  Normal  ScalingReplicaSet  12m (x2 over 14m)   deployment-controller  Scaled down replica set frontend-67999b9c88 from 4 to 3
+  Normal  ScalingReplicaSet  11m                 deployment-controller  Scaled down replica set frontend-67999b9c88 from 1 to 0
+  Normal  ScalingReplicaSet  45s (x14 over 14m)  deployment-controller  (combined from similar events): Scaled up replica set frontend-6b86c6b555 from 0 to 4
+
+controlplane ~ ➜  kubectl set image deployment frontend simple-webapp=kodekloud/webapp-color:v2
+deployment.apps/frontend image updated
+
+controlplane ~ ➜  kubectrl get all
+NAME                            READY   STATUS        RESTARTS   AGE
+pod/frontend-6b86c6b555-4gpfp   1/1     Terminating   0          66s
+pod/frontend-6b86c6b555-k6brn   1/1     Terminating   0          66s
+pod/frontend-6b86c6b555-spn2g   1/1     Terminating   0          66s
+pod/frontend-6b86c6b555-v2pbg   1/1     Terminating   0          66s
+
+NAME                     TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+service/kubernetes       ClusterIP   10.43.0.1      <none>        443/TCP          36m
+service/webapp-service   NodePort    10.43.68.187   <none>        8080:30080/TCP   28m
+
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/frontend   0/4     0            0           28m
+
+NAME                                  DESIRED   CURRENT   READY   AGE
+replicaset.apps/frontend-67999b9c88   0         0         0       17m
+replicaset.apps/frontend-6b86c6b555   0         0         0       28m
+
+controlplane ~ ➜  kubectl get all 
+NAME                            READY   STATUS    RESTARTS   AGE
+pod/frontend-67999b9c88-994jg   1/1     Running   0          6s
+pod/frontend-67999b9c88-psr2r   1/1     Running   0          6s
+pod/frontend-67999b9c88-rrpl5   1/1     Running   0          6s
+pod/frontend-67999b9c88-tf7kn   1/1     Running   0          6s
+
+NAME                     TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+service/kubernetes       ClusterIP   10.43.0.1      <none>        443/TCP          36m
+service/webapp-service   NodePort    10.43.68.187   <none>        8080:30080/TCP   28m
+
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/frontend   4/4     4            0           28m
+
+NAME                                  DESIRED   CURRENT   READY   AGE
+replicaset.apps/frontend-67999b9c88   4         4         4       17m
+replicaset.apps/frontend-6b86c6b555   0         0         0       28m
+
+controlplane ~ ➜  
