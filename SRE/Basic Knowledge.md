@@ -20,17 +20,23 @@
   - [Terragrunt](#terragrunt)
   - [Multitenancy](#multitenancy)
   - [YAML](#yaml)
-  - [💡 K8s Service 的真实含义和作用](#-k8s-service-的真实含义和作用)
+  - [K8S Service 的真实含义和作用](#k8s-service-的真实含义和作用)
     - [核心痛点与 Service 的解决方案](#核心痛点与-service-的解决方案)
-  - [🧐 为什么叫它 Service（服务）？](#-为什么叫它-service服务)
-  - [🌐 K8s Service 的类型](#-k8s-service-的类型)
-  - [🏷️ 1. Label（标签）是什么？](#️-1-label标签是什么)
-    - [作用：组织和识别](#作用组织和识别)
-  - [🔎 2. Selector（选择器）是什么？](#-2-selector选择器是什么)
-    - [作用：定位和管理](#作用定位和管理)
-    - [常见的 Selector 使用场景：](#常见的-selector-使用场景)
-  - [🔗 3. Label 和 Selector 的关系（核心）](#-3-label-和-selector-的关系核心)
-    - [关系图示](#关系图示)
+    - [为什么叫它 Service（服务）？](#为什么叫它-service服务)
+    - [K8s Service 的类型](#k8s-service-的类型)
+    - [1. Label（标签）是什么？](#1-label标签是什么)
+      - [作用：组织和识别](#作用组织和识别)
+    - [2. Selector（选择器）是什么？](#2-selector选择器是什么)
+      - [作用：定位和管理](#作用定位和管理)
+      - [常见的 Selector 使用场景](#常见的-selector-使用场景)
+    - [3. Label 和 Selector 的关系（核心）](#3-label-和-selector-的关系核心)
+      - [关系图示](#关系图示)
+  - [云原生 (Cloud Native)](#云原生-cloud-native)
+    - [云原生的核心三要素](#云原生的核心三要素)
+      - [1. 技术架构 (Architecture)](#1-技术架构-architecture)
+      - [2. 自动化和管理 (Automation \& Management)](#2-自动化和管理-automation--management)
+      - [3. 文化和流程 (Culture \& Process)](#3-文化和流程-culture--process)
+    - [云原生的最终目标](#云原生的最终目标)
 
 ## REFERENCE
 
@@ -392,14 +398,14 @@ can use some extension or plugin to hight the syntax error or validate the conte
 
 ---
 
-## 💡 K8s Service 的真实含义和作用
+## K8S Service 的真实含义和作用
 
 Kubernetes 中的 **Service** 是一种 **抽象层**，它解决的核心问题是 **Pod 的不稳定性和发现性**。
 
 简单来说，K8s Service 有两个主要职责：
 
-1.  **负载均衡器 (Load Balancer):** 将客户端的请求分散到多个后端的 Pod 上。
-2.  **稳定的网络端点 (Stable Network Endpoint):** 为一组动态变化的 Pod 提供一个固定的 IP 地址和 DNS 名称。
+1. **负载均衡器 (Load Balancer):** 将客户端的请求分散到多个后端的 Pod 上。
+2. **稳定的网络端点 (Stable Network Endpoint):** 为一组动态变化的 Pod 提供一个固定的 IP 地址和 DNS 名称。
 
 ### 核心痛点与 Service 的解决方案
 
@@ -412,22 +418,18 @@ Kubernetes 中的 **Service** 是一种 **抽象层**，它解决的核心问题
 | **负载均衡** | 客户端需要将流量均匀地分散到所有健康的后端 Pod 上。 |
 | **Service 内置负载均衡机制**（通常是 Round-Robin 或 Least Connections），确保流量均匀分配。 |
 
-
-
----
-
-## 🧐 为什么叫它 Service（服务）？
+### 为什么叫它 Service（服务）？
 
 虽然名字很通用，但 Kubernetes 沿用这个名称是因为它确实将一组 Pod 暴露为一个可用的“服务”：
 
-* **对内：** 它使集群内的其他 Pod 可以通过一个固定的内部 DNS 名称访问后端应用（例如，直接访问 `my-database-service`）。
-* **对外：** 它定义了应用如何从集群外部（Internet）被访问。
+- **对内：** 它使集群内的其他 Pod 可以通过一个固定的内部 DNS 名称访问后端应用（例如，直接访问 `my-database-service`）。
+- **对外：** 它定义了应用如何从集群外部（Internet）被访问。
 
 所以，与其说它是一个服务，不如说它是一个 **“服务抽象/发现层”** 或 **“网络代理”**。
 
 ---
 
-## 🌐 K8s Service 的类型
+### K8s Service 的类型
 
 Kubernetes Service 有几种不同的类型，决定了它如何将应用暴露给网络：
 
@@ -444,39 +446,39 @@ Kubernetes Service 有几种不同的类型，决定了它如何将应用暴露�
 
 ---
 
-## 🏷️ 1. Label（标签）是什么？
+### 1. Label（标签）是什么？
 
 **Label** 是附加到 Kubernetes 对象（如 Pod、Node、Service、Deployment 等）上的 **键值对 (Key-Value pairs)**。
 
-### 作用：组织和识别
+#### 作用：组织和识别
 
-* **识别属性：** Label 用于以对用户有意义的方式识别对象。
-* **解耦：** 它们不直接耦合到核心系统，而是用于用户自定义的组织结构。
-* **示例：**
-    * **应用类型：** `app: frontend` 或 `app: database`
-    * **环境：** `env: production` 或 `env: development`
-    * **版本：** `version: v1.2.3`
+- **识别属性：** Label 用于以对用户有意义的方式识别对象。
+- **解耦：** 它们不直接耦合到核心系统，而是用于用户自定义的组织结构。
+- **示例：**
+  - **应用类型：** `app: frontend` 或 `app: database`
+  - **环境：** `env: production` 或 `env: development`
+  - **版本：** `version: v1.2.3`
 
 **特点：**
 
-* 一个对象可以有多个 Label。
-* Label 可以在对象创建后随时添加或修改。
+- 一个对象可以有多个 Label。
+- Label 可以在对象创建后随时添加或修改。
 
 ---
 
-## 🔎 2. Selector（选择器）是什么？
+### 2. Selector（选择器）是什么？
 
 **Selector** 是一种表达式，用于 **匹配** 具有特定 Label 的一组对象。它是 Kubernetes 自动化和控制循环工作的核心机制。
 
-### 作用：定位和管理
+#### 作用：定位和管理
 
 Selector 的作用是告诉控制器（Controller）或 Service 应该管理或路由到哪些对象。
 
-### 常见的 Selector 使用场景：
+#### 常见的 Selector 使用场景
 
-1.  **ReplicaSet/Deployment Selector:** 用于告诉控制器应该管理哪些 Pod（确保它们数量正确）。
-2.  **Service Selector:** 用于告诉 Service 应该将客户端请求路由到哪些后端的 Pod。
-3.  **Node Selector:** 用于限制 Pod 只能在具有特定 Label 的 Node 上调度。
+1. **ReplicaSet/Deployment Selector:** 用于告诉控制器应该管理哪些 Pod（确保它们数量正确）。
+2. **Service Selector:** 用于告诉 Service 应该将客户端请求路由到哪些后端的 Pod。
+3. **Node Selector:** 用于限制 Pod 只能在具有特定 Label 的 Node 上调度。
 
 **示例：**
 
@@ -484,14 +486,14 @@ Selector 的作用是告诉控制器（Controller）或 Service 应该管理或�
 
 ---
 
-## 🔗 3. Label 和 Selector 的关系（核心）
+### 3. Label 和 Selector 的关系（核心）
 
 **Label 和 Selector 之间的关系是“标识与选择”的关系。**
 
 * **Label 负责标识 (Identity):** 它们是对象身上的“身份标签”。
 * **Selector 负责选择 (Selection):** 它们是“查找条件”，根据 Label 去找对应的对象。
 
-### 关系图示
+#### 关系图示
 
 | 资源 | 定义 Selector | 定义 Label | 核心功能 |
 | :--- | :--- | :--- | :--- |
@@ -500,6 +502,60 @@ Selector 的作用是告诉控制器（Controller）或 Service 应该管理或�
 
 **关键的匹配原则：**
 
-1.  **控制器和 Pod 模板：** 在定义像 `Deployment` 这样的控制器时，您必须确保 `spec.selector.matchLabels` 中定义的标签选择器，与 `spec.template.metadata.labels` 中定义的 Pod 标签**完全一致**。如果它们不匹配，控制器将无法找到或创建自己的 Pod。
-2.  **Pod 和 Service：** Service 使用其 Selector 来查找所有匹配的 Pod，这些 Pod 成为 Service 的**端点 (Endpoints)**。
+1. **控制器和 Pod 模板：** 在定义像 `Deployment` 这样的控制器时，您必须确保 `spec.selector.matchLabels` 中定义的标签选择器，与 `spec.template.metadata.labels` 中定义的 Pod 标签**完全一致**。如果它们不匹配，控制器将无法找到或创建自己的 Pod。
+2. **Pod 和 Service：** Service 使用其 Selector 来查找所有匹配的 Pod，这些 Pod 成为 Service 的**端点 (Endpoints)**。
 
+---
+
+## 云原生 (Cloud Native) 
+
+这是一个涵盖广泛且非常重要的概念。**云原生 (Cloud Native)** 是一套设计、构建和运行应用程序的方法论，它充分利用了云计算平台的优势（例如弹性、分布式、可扩展性）。
+
+它不是一个单一的技术，而是一系列文化、架构和技术实践的集合。
+
+---
+
+### 云原生的核心三要素
+
+云原生生态系统由以下三个紧密相连的支柱支撑：
+
+#### 1. 技术架构 (Architecture)
+
+这是云原生的基础，要求应用程序在设计之初就考虑到云计算环境的特点。
+
+| 实践名称 | 核心概念 | 目的和优势 |
+| :--- | :--- | :--- |
+| **微服务 (Microservices)** | 将一个庞大的单体应用拆分成一组小型的、独立部署和独立运行的服务，每个服务只关注一个业务功能。 | 提高开发速度，允许使用不同的技术栈，故障隔离。 |
+| **容器化 (Containerization)** | 使用 Docker 等技术将应用及其所有依赖项（代码、运行时、系统工具）打包成一个独立的、可移植的单元。 | 确保应用在任何环境（开发、测试、生产）中的一致性运行。 |
+| **不可变基础设施 (Immutable Infrastructure)** | 基础设施一旦部署就不能修改。如果需要更新，则销毁旧实例，部署新实例。 | 提高可靠性、可预测性和安全性。 |
+
+#### 2. 自动化和管理 (Automation & Management)
+
+这是实现云原生效率的关键，需要工具来管理和编排容器、自动化部署和资源调度。
+
+| 实践名称 | 核心概念 | 目的和优势 |
+| :--- | :--- | :--- |
+| **Kubernetes (K8s)** | 容器编排系统，负责自动化部署、扩展和管理容器化应用程序。 | 自动调度、自愈能力、高效利用资源，是云原生的**基础设施核心**。 |
+| **服务网格 (Service Mesh)** | 提供网络控制层（如 Istio），处理服务之间的通信、安全、策略和可观测性，将这些逻辑从应用代码中剥离。 | 简化微服务治理，提高通信的可靠性和安全性。 |
+
+#### 3. 文化和流程 (Culture & Process)
+
+技术上的改变必须伴随着文化和流程的革新，才能真正发挥云原生的潜力。
+
+| 实践名称 | 核心概念 | 目的和优势 |
+| :--- | :--- | :--- |
+| **DevOps** | 强调开发 (Dev) 和运维 (Ops) 团队之间的协作、沟通和集成。 | 加快软件交付速度和可靠性。 |
+| **持续集成/持续交付 (CI/CD)** | 自动化构建、测试和部署流程，使代码变更能够快速、可靠地发布到生产环境。 | 实现快速迭代和持续改进。 |
+| **可观测性 (Observability)** | 不仅仅是监控，而是通过收集和分析日志 (Logs)、指标 (Metrics) 和链路追踪 (Tracing)，实时了解系统的内部状态。 | 快速发现、诊断和解决复杂的分布式系统问题。 |
+
+---
+
+### 云原生的最终目标
+
+云原生的最终目标是：
+
+**最大化速度、敏捷性和可靠性，实现快速、持续、大规模地交付高质量的应用程序和服务。**
+
+它将云计算的能力（弹性、按需付费、全球分布）与现代软件开发实践（微服务、自动化）相结合，让企业能够像 Google、Netflix 那样运营其软件。
+
+---
