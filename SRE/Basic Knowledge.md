@@ -13,6 +13,7 @@
   - [Infrastructure as a Service (IaaS)](#infrastructure-as-a-service-iaas)
   - [Kubernetes](#kubernetes)
     - [Kubnernetes API](#kubnernetes-api)
+    - [Building Blocks](#building-blocks)
   - [Pod](#pod)
   - [Nodes](#nodes)
   - [Helm](#helm)
@@ -227,6 +228,45 @@ Common Interactions:
 
 Note: While kubectl provides a convenient command-line interface to interact with the Kubernetes API, direct API interaction can be performed using client libraries in various programming languages (Go, Python, Java, etc.) or by making direct HTTP requests.
 
+### Building Blocks
+
+- Deployments
+  - tell Kubernetes how you want your application's lifecycle handled, including scaling and updates.
+  - Rolling Updates：facilitate smooth, zero-downtime application updates. Gradually replaces the old Pods with new ones at a controlled rate, ensuring continuous availability.
+  - Rollbacks: If a new deployment turns out to be unstable, can easily roll back to a previous, stable version.
+  - Self-Healing: automatically restarting or replacing failed Pods to maintain the desired application state.
+  - Stateless Focus: ideal for stateless applications, where individual Pod instances are interchangeable and do not require persistent data across restarts.
+- Services
+  - provides a stable, persistent network endpoint for a set of Pods. Because Pods are ephemeral (they come and go, and their IP addresses change), you need a stable way to communicate with them. A Service is that abstraction.
+  - Services assign a stable IP address and DNS name to a group of Pods (determined by a selector), and load-balance traffic across them.
+  - ClusterIP: Exposes the Service on an internal cluster IP. This makes the Service only reachable from within the cluster, which is ideal for internal microservice communication.
+  - NodePort: Exposes the Service on a static port on each Node's IP. This makes the Service accessible from outside the cluster via any Node's IP and the static port.
+  - LoadBalancer: Exposes the Service externally using a cloud provider's load balancer, which routes traffic to your Pods.
+  - ExternalName: Maps a Service to an arbitrary external DNS name, not a Pod selector.
+  - Headless: A special type that doesn't assign a cluster IP, but rather provides stable DNS entries for each individual Pod, which is essential for StatefulSets.
+  - Analogy: A Service is like a telephone number for a department in a large company. You call one consistent number, and the call is routed to any available employee (Pod)
+- ConfigMaps
+  - store non-confidential configuration data as key-value pairs or as entire configuration files. They decouple configuration details from your application code. manage environment-specific settings (like feature flags, logging levels, or database URLs) without having to rebuild your container images.
+  - Decoupling: Promotes best practices by separating configuration from the application image, making the container images more portable and reusable.
+  - Consumption Methods: Pods can consume ConfigMap data as environment variables, command-line arguments, or as files mounted in a volume inside the container.
+  - Dynamic Updates: When mounted as volumes, some applications can even access updated configuration values without needing a restart.
+  - Analogy: A ConfigMap is like a general settings file cabinet for the factory.
+- Secrets
+  - similar to ConfigMaps but are specifically designed for storing and managing sensitive information, such as passwords, API tokens, and SSH keys.  provide a safer and more flexible way to use confidential data than hardcoding it in a Pod definition or container image.
+  - Security Focus: Data in Secrets is base64 encoded by default (to prevent accidental display, not true encryption, though they can be encrypted at rest on the cluster).
+  - Access Control: Access to Secrets can be restricted using Role-Based Access Control (RBAC) within Kubernetes.
+  - Consumption Methods: Like ConfigMaps, Secrets can be exposed to Pods as environment variables or as files in a mounted volume. Using volumes is generally preferred for better security and dynamic updates.
+  - Analogy: A Secret is like a secure safe in the factory manager's office.
+- Ingress
+  - manages external access to the Services within a cluster, typically HTTP traffic. It provides advanced traffic routing capabilities beyond what a Service alone can offer. acts as the entry point for traffic coming into your cluster from the outside world. It can provide load balancing, SSL/TLS termination, and name-based virtual hosting.
+  - External Access Routing: It defines rules for how traffic should be routed to different Services based on the request URL path or hostname.
+  - Centralized Traffic Management: Instead of creating multiple LoadBalancer Services (which can be costly), a single Ingress controller can manage access to many services, saving costs.
+  - TLS/SSL: It can handle the termination of secure connections (HTTPS), managing the necessary certificates stored in Secrets.
+  - Analogy: Ingress is the main reception desk and directory of a large office building. All external visitors (external traffic) arrive here.
+- Summary
+  - Deployments manage your application instances; Services provide reliable internal network connectivity; ConfigMaps and Secrets handle configuration and sensitive data management securely; and Ingress opens up controlled, intelligent access from the outside world. 
+- etc
+
 ## Pod
 
 Within a Kubernetes environment, a pod acts as the most basic deployable unit. It represents an essential building block for deploying and managing containerized applications. Each pod contains a single application instance and can hold one or more containers. Kubernetes manages pods as part of a larger deployment and can scale pods vertically or horizontally as needed.
@@ -243,7 +283,7 @@ A node is a computer that works in concert with other computers, or nodes, to ac
 
 ## Helm
 
-Helm is a package manager for Kubernetes that simplifies the deployment and management of applications on Kubernetes clusters. Helm uses a packaging format called charts. A **Helm chart** is a collection of files that describe a related set of Kubernetes resources. A single chart might be used to deploy something simple, like a memcached pod, or something complex, like a full web app stack with HTTP servers, databases, caches, and so on.
+Helm is a package manager for Kubernetes that *simplifies the deployment and management of applications on Kubernetes clusters*.  It solves resource issues by letting you bundle resource files into a single package. They are defined in Yaml files, which are often called manifests. Helm uses a packaging format called charts. A **Helm chart** is a collection of files that describe a related set of Kubernetes resources. A single chart might be used to deploy something simple, like a memcached pod, or something complex, like a full web app stack with HTTP servers, databases, caches, and so on.
 
 Helm, essentially a package manager for Kubernetes, simplifies the deployment process by providing a templating engine and a collection of pre-configured packages called "charts." These charts define the resources needed to run an application in Kubernetes, including deployments, services, and configuration files.
 
