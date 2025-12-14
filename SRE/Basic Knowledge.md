@@ -54,6 +54,13 @@
       - [2. 安全 (Security)](#2-安全-security)
       - [3. 可观测性 (Observability)](#3-可观测性-observability)
     - [Istio 的优势与挑战](#istio-的优势与挑战)
+  - [Kubernetes/云原生分层模型](#kubernetes云原生分层模型)
+    - [Kubernetes/云原生分层模型 (实践约定)](#kubernetes云原生分层模型-实践约定)
+      - [L1：基础设施层 (The Infrastructure Layer)](#l1基础设施层-the-infrastructure-layer)
+      - [L2：Kubernetes 控制层/平台层 (The Control Plane \& Platform Layer)](#l2kubernetes-控制层平台层-the-control-plane--platform-layer)
+      - [L3：应用服务层 (The Application Services Layer)](#l3应用服务层-the-application-services-layer)
+      - [L4：用户体验层 (The End-User Experience Layer)](#l4用户体验层-the-end-user-experience-layer)
+    - [📜 官方文档说明](#-官方文档说明)
 
 ## REFERENCE
 
@@ -771,3 +778,69 @@ Envoy 代理作为所有流量的必经之路，使其成为收集遥测数据�
 | **高度标准化** | **性能影响：** 虽然 Envoy 很快，但额外的网络跳转和处理仍会略微增加延迟。 |
 
 **总结：** Istio 是一个成熟的企业级 Service Mesh 解决方案，适用于需要高级流量管理、严格安全控制和深度可观测性的大规模微服务环境。
+
+---
+
+## Kubernetes/云原生分层模型 
+
+您提出的“Kubernetes L1 层、L2 层”的概念，并非来自 Kubernetes 官方文档的严格分层模型（例如 ISO/OSI 模型）。它更像是一个在 **云原生社区和运维实践中** 约定俗成、用于描述**责任边界和故障域**的分层模型。
+
+这种分层对于理解**谁负责维护哪部分**以及**混沌工程如何分层测试**至关重要。
+
+---
+
+### Kubernetes/云原生分层模型 (实践约定)
+
+通常，一个完整的云原生应用堆栈可以粗略地分为 3 到 4 个层级，从最底层的物理资源到最上层的用户应用：
+
+#### L1：基础设施层 (The Infrastructure Layer)
+
+- **定义：** 构成 Kubernetes 集群运行基础的底层计算、网络和存储资源。这一层通常由**云服务提供商 (CSP)** 或**裸金属运维团队**负责。
+- **责任边界：** 负责提供稳定的 IaaS (Infrastructure as a Service)。
+- **资源示例：**
+  - **计算：** AWS EC2 实例、GCP Compute Engine、Azure VM (即 K8s 的 Worker/Control Plane 节点)。
+  - **网络：** VPC、子网、路由表、网络互联、Load Balancer 服务本身。
+  - **存储：** 块存储 (EBS/PD)、文件存储。
+- **故障注入工具：** **AWS FIS**、云平台 API。
+- **管理工具：** **Terraform**、CloudFormation。
+
+#### L2：Kubernetes 控制层/平台层 (The Control Plane & Platform Layer)
+
+- **定义：** Kubernetes 系统的核心组件，负责集群的自动化、调度和自愈。这一层通常由**平台工程 (Platform Engineering) 团队**或云服务商负责。
+- **责任边界：** 负责集群的健康运行和高效调度。
+- **资源示例：**
+  - **控制平面组件：** API Server, etcd, Scheduler, Controller Manager。
+  - **节点代理：** Kubelet, Kube-proxy。
+  - **集群插件：** CNI (网络插件), CSI (存储插件), CoreDNS。
+- **故障注入工具：** **Chaos Mesh**、**LitmusChaos** (针对 Kubelet/Kube-proxy/CNI)。
+- **管理工具：** **Kubeadm**、`eksctl`、Helm。
+
+#### L3：应用服务层 (The Application Services Layer)
+
+- **定义：** 运行在 Kubernetes 上的用户应用程序和它们的配置。这一层主要由**开发 (Dev) 或 SRE 团队**负责。
+- **责任边界：** 负责应用的正确性、部署、弹性和可观测性。
+- **资源示例：**
+  - **Kubernetes 对象：** Deployment, Service, ConfigMap, Secret, Ingress。
+  - **业务代码：** 微服务、数据库客户端、业务逻辑代码。
+- **故障注入工具：** **LitmusChaos** (利用其 Probes/Workflows 进行业务验证)、**Chaos Mesh** (注入 Pod 级的资源压力)。
+- **管理工具：** **Helm**、**ArgoCD/FluxCD (GitOps)**。
+
+#### L4：用户体验层 (The End-User Experience Layer)
+
+- **定义：** 用户直接感受到的应用程序性能和功能。
+- **责任边界：** 最终的业务指标和用户满意度。
+- **指标示例：** 响应延迟、事务成功率、SLA/SLO 达成情况。
+
+---
+
+### 📜 官方文档说明
+
+如前所述，Kubernetes **官方文档** 并没有一个名为 L1/L2/L3 的分层模型。
+
+官方文档更多地使用**组件 (Components)** 和**概念 (Concepts)** 来描述系统结构。最接近的分层模型是：
+
+1. **控制平面组件 (Control Plane Components):** 对应于我们的 L2 层核心。
+2. **工作节点组件 (Node Components):** 对应于 L1 上的 Kubelet 和 Kube-proxy。
+3. **对象 (Objects) 和概念:** 对应于 L3 层的资源定义。
+
+您可以参考 Kubernetes 官方文档中的 **“Kubernetes 基础概念”** 和 **“架构”** 部分来了解官方的结构描述。 
