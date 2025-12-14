@@ -60,7 +60,7 @@
       - [L2：Kubernetes 控制层/平台层 (The Control Plane \& Platform Layer)](#l2kubernetes-控制层平台层-the-control-plane--platform-layer)
       - [L3：应用服务层 (The Application Services Layer)](#l3应用服务层-the-application-services-layer)
       - [L4：用户体验层 (The End-User Experience Layer)](#l4用户体验层-the-end-user-experience-layer)
-    - [📜 官方文档说明](#-官方文档说明)
+    - [官方文档说明](#官方文档说明)
 
 ## REFERENCE
 
@@ -833,7 +833,7 @@ Envoy 代理作为所有流量的必经之路，使其成为收集遥测数据�
 
 ---
 
-### 📜 官方文档说明
+### 官方文档说明
 
 如前所述，Kubernetes **官方文档** 并没有一个名为 L1/L2/L3 的分层模型。
 

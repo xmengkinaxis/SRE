@@ -1554,6 +1554,7 @@ webapp-service   NodePort    10.43.220.216   <none>        8080:30080/TCP   3s
 # kubectl get pods -l owener=Ahmed
 # kubectl get pods -l stage in (prodution, development)
 # kubectl api-resources
+# kubectl api-resources -o wide
 # kubectl get rs; ReplicaSet
 # kubectl get node -o wide
 # kubectl scale deployment vote --replicas=5

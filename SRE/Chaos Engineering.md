@@ -36,7 +36,7 @@
       - [2. 操作 (Actions)](#2-操作-actions)
       - [3. 目标 (Targets)](#3-目标-targets)
       - [4. 安全杆 (Safety Lever)](#4-安全杆-safety-lever)
-    - [🎯 AWS FIS 的价值](#-aws-fis-的价值)
+    - [AWS FIS 的价值](#aws-fis-的价值)
   - [Chaos Mesh](#chaos-mesh)
     - [Chaos Mesh 的核心定位](#chaos-mesh-的核心定位)
     - [核心组件与工作原理](#核心组件与工作原理)
@@ -339,7 +339,7 @@ AWS FIS 包含一个安全机制，称为**安全杆 (Safety Lever)**。这是�
 - **作用：** 如果激活，安全杆会立即停止所有正在进行的 FIS 实验，并阻止新的实验开始。
 - **目的：** 作为应对紧急情况的最后防线，确保在应用程序健康状况出现意外警报时，可以迅速停止所有破坏性活动。
 
-### 🎯 AWS FIS 的价值
+### AWS FIS 的价值
 
 使用 AWS FIS 的目的不是为了让应用崩溃，而是为了：
 
