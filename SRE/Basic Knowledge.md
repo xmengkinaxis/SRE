@@ -32,6 +32,25 @@
       - [常见的 Selector 使用场景](#常见的-selector-使用场景)
     - [3. Label 和 Selector 的关系（核心）](#3-label-和-selector-的关系核心)
       - [关系图示](#关系图示)
+  - [Kubernetes (K8s) 控制平面 (Control Plane)](#kubernetes-k8s-控制平面-control-plane)
+    - [Kubernetes 控制平面的核心组件](#kubernetes-控制平面的核心组件)
+      - [1. etcd (集群状态数据库)](#1-etcd-集群状态数据库)
+      - [2. API Server (集群通信门户)](#2-api-server-集群通信门户)
+      - [3. Scheduler (调度器)](#3-scheduler-调度器)
+      - [4. Controller Manager (控制器管理器)](#4-controller-manager-控制器管理器)
+    - [关键组件之间的互动流程](#关键组件之间的互动流程)
+    - [Kubernetes 架构总览](#kubernetes-架构总览)
+    - [组件交互流程图：以创建一个 Pod 为例](#组件交互流程图以创建一个-pod-为例)
+    - [控制器管理器 (Controller Manager) 的内部逻辑](#控制器管理器-controller-manager-的内部逻辑)
+    - [调度器 (Scheduler) 的决策过程](#调度器-scheduler-的决策过程)
+      - [总结](#总结)
+    - [API Server是无状态的 (Stateless)](#api-server是无状态的-stateless)
+      - [1. API Server是完全无状态的](#1-api-server是完全无状态的)
+      - [2. 它不是“一组 API”](#2-它不是一组-api)
+      - [3. 它包含“处理逻辑”，但不包含“控制循环”](#3-它包含处理逻辑但不包含控制循环)
+        - [API Server 的“逻辑” (Logic)](#api-server-的逻辑-logic)
+        - [API Server 与循环 (Loop)](#api-server-与循环-loop)
+    - [对比总结：API Server vs Controller Manager](#对比总结api-server-vs-controller-manager)
   - [云原生 (Cloud Native)](#云原生-cloud-native)
     - [云原生的核心三要素](#云原生的核心三要素)
       - [1. 技术架构 (Architecture)](#1-技术架构-architecture)
@@ -667,6 +686,165 @@ Selector 的作用是告诉控制器（Controller）或 Service 应该管理或�
 
 1. **控制器和 Pod 模板：** 在定义像 `Deployment` 这样的控制器时，您必须确保 `spec.selector.matchLabels` 中定义的标签选择器，与 `spec.template.metadata.labels` 中定义的 Pod 标签**完全一致**。如果它们不匹配，控制器将无法找到或创建自己的 Pod。
 2. **Pod 和 Service：** Service 使用其 Selector 来查找所有匹配的 Pod，这些 Pod 成为 Service 的**端点 (Endpoints)**。
+
+---
+
+## Kubernetes (K8s) 控制平面 (Control Plane)
+
+**Kubernetes 的控制平面是集群的大脑，它负责做出全局决策**，例如调度、维护集群期望状态、响应事件等。
+
+### Kubernetes 控制平面的核心组件
+
+Kubernetes 的控制平面通常包含以下四个主要组件：
+
+#### 1. etcd (集群状态数据库)
+
+- **作用：** etcd 是一个高可用、分布式、一致性的键值存储数据库。
+- **交互方式：** 它存储了整个集群的**配置数据、状态数据和元数据**。它是集群的“唯一真实来源 (Single Source of Truth)”。所有其他控制平面组件都会读写 etcd，但它们通常通过 API Server 进行间接操作。
+- **关键词：** 状态存储，唯一真实来源，分布式一致性。
+
+#### 2. API Server (集群通信门户)
+
+- **作用：** API Server 是控制平面的前端。它是所有外部和内部请求（`kubectl` 命令、其他组件的请求）进入集群的唯一入口。
+- **交互方式：**
+  - **身份验证/授权：** 验证请求的合法性。
+  - **持久化：** 接收请求后，验证资源格式，并将数据持久化到 **etcd** 中。
+  - **Watch 机制：** 暴露一个 RESTful API 接口，并允许其他组件（如 Controller Manager 和 Scheduler）通过 “Watch” 机制高效地监听资源的实时变化。
+- **关键词：** REST API, 身份验证, etcd 读写中介, Watch 机制。
+
+#### 3. Scheduler (调度器)
+
+- **组件名：** `kube-scheduler`
+- **作用：** 负责将**新创建的、未分配节点**的 Pods 分配给一个健康、合适的 Worker Node。
+- **交互方式（核心逻辑）：**
+  1. **Watch API Server：** Scheduler 持续监听 API Server，查找 `spec.nodeName` 字段为空的新 Pod 对象。
+  2. **过滤 (Filtering/Predicates)：** 遍历集群中的所有节点，根据 Pod 的资源请求（如 CPU/内存需求）、节点亲和性、污点与容忍度等条件，排除掉不符合要求的节点。
+  3. **评分 (Scoring/Priorities)：** 对剩余的符合要求的节点进行打分（例如，资源利用率较低、匹配度更高的节点得分更高）。
+  4. **绑定 (Binding)：** 选中分数最高的节点，然后通过 API Server 更新 Pod 的 `spec.nodeName` 字段，完成**绑定**操作。
+- **关键词：** Pod 绑定，过滤（排除），评分（排序），资源分配。
+
+#### 4. Controller Manager (控制器管理器)
+
+- **组件名：** `kube-controller-manager`
+- **作用：** 维护集群的**期望状态 (Desired State)**。它是一个逻辑上独立的控制器集合，每个控制器负责特定类型的资源。
+- **交互方式（控制循环）：** 每个控制器都在一个**控制循环 (Control Loop)** 中工作：
+  1. **获取期望状态：** 通过 API Server 监听（Watch）用户在 etcd 中定义的资源对象（如 Deployment, ReplicaSet）。
+  2. **获取实际状态：** 查询集群中该资源的实际运行状态。
+  3. **调节 (Reconciliation)：** 对比期望状态和实际状态。如果两者不匹配（例如，期望 3 个 Pod，实际只有 2 个），则执行操作（如创建或删除 Pod）来弥补差异。
+- **包含的控制器示例：**
+  - **ReplicaSet Controller：** 确保 Pod 的实际副本数与期望副本数一致。
+  - **Deployment Controller：** 负责 Deployment 的滚动更新和回滚。
+  - **Node Controller：** 负责检测和响应节点故障。
+- **关键词：** 控制循环, 期望状态，实际状态，调节，ReplicaSet。
+
+### 关键组件之间的互动流程
+
+展示了 Pod 创建到运行的关键流程，突出了 Scheduler 和 Controller Manager 的角色：
+
+1. **用户创建 Deployment：** 用户通过 `kubectl apply` 或其他方式提交 Deployment YAML 到 **API Server**。
+2. **API Server 持久化：** API Server 验证并存储 Deployment 对象到 **etcd**。
+3. **Controller Manager 介入 (ReplicaSet)：**
+   - Deployment Controller 监听到新的 Deployment，创建相应的 **ReplicaSet** 对象，并将其提交给 API Server/etcd。
+   - ReplicaSet Controller 监听到新的 ReplicaSet，并根据期望的副本数（例如 3），创建 3 个 **Pod** 对象，但这些 Pods 此时**没有分配节点** (`.spec.nodeName` 为空)。
+4. **Scheduler 介入 (~~Pod~~ 调度)：**
+   - Scheduler 监听到 3 个没有分配节点的新 Pods。
+   - Scheduler 执行**过滤和评分**，为每个 Pod 选定最佳节点。
+   - Scheduler 通过 API Server 更新 Pod 对象，将节点的名称填入 `.spec.nodeName` 字段（即完成**绑定**）。
+5. **Kubelet 启动 Pod (Worker Node)：**
+   - Worker Node 上的 **Kubelet** 持续监听 API Server。一旦它发现有一个 Pod 对象被绑定到自己的节点上，Kubelet 就会拉取镜像，并在该节点上启动 Pod 容器。
+6. **Controller Manager 介入 (反馈循环)：**
+   - Kubelet 报告 Pod 的状态（Running, Failed 等）给 API Server。
+   - ReplicaSet Controller 持续 Watch 这些状态，确保 Pods 的实际数量（3 个 Running）始终与期望状态匹配。
+
+### Kubernetes 架构总览
+
+首先，我们需要从宏观上理解控制平面（大脑）与工作节点（身体）的关系。
+
+- **控制平面 (Control Plane):** 负责管理集群的全局状态。
+- **工作节点 (Worker Nodes):** 运行容器化应用，受控制平面的指令驱动。
+
+### 组件交互流程图：以创建一个 Pod 为例
+
+这是理解 **Scheduler** 和 **Controller Manager** 如何协同工作的最佳方式。当您发布一个 Deployment 时，内部发生了一场精密的一致性“接力赛”：
+
+1. **API Server & etcd:** 用户提交 YAML，API Server 将“期望状态”写入 etcd 这个数据库。
+2. **Controller Manager:** 它像一个**监督员**。监听到新的 Deployment 后，它计算出需要 3 个 Pod，于是通过 API Server 在 etcd 中创建 3 个 Pod 的记录（此时这些 Pod 还没分配给任何机器）。
+3. **Scheduler:** 它像一个**资源调度员**。它不断扫描那些没有分配节点的 Pod。它查看所有机器的剩余资源，通过“过滤”和“打分”，决定将 Pod 分配给 Node-A，并通知 API Server。
+4. **Kubelet (在节点上):** 它像一个**包工头**。它看到 API Server 分配给它任务了，于是联系容器运行时（如 Docker 或 containerd）去真正把容器跑起来。
+
+### 控制器管理器 (Controller Manager) 的内部逻辑
+
+控制器管理器实际上是一个**控制循环 (Control Loop)** 的集合。
+
+ **核心逻辑：**
+
+1. **观察 (Watch):** 查看当前集群的实际状态（有多少 Pod 在跑）
+2. **对比 (Diff):** 与用户要求的“期望状态”对比（用户想要 5 个，现在只有 3 个）。
+3. **行动 (Act):** 执行操作（补齐缺少的 2 个 Pod）以消除差异。
+
+### 调度器 (Scheduler) 的决策过程
+
+调度器在决定 Pod 去哪台机器时，遵循两个阶段：
+
+1. **过滤 (Filtering):** 排除掉资源不足（内存不够、CPU 占满）或者有“污点”的节点。
+2. **打分 (Scoring):** 在剩下的合格节点中，根据负载均衡原则或亲和性配置选出最合适的一个。
+
+#### 总结
+
+- **API Server** 是所有人的**中间人**，没有人直接互相说话。
+- **etcd** 是**笔记本**，记录了所有人的状态。
+- **Controller Manager** 负责**结果**（确保副本数对不对）。
+- **Scheduler** 负责**选址**（确保 Pod 放哪台机器最合适）。
+
+### API Server是无状态的 (Stateless)
+
+但它绝对不只是“一组 API 接口”，它内部包含非常复杂的**请求处理逻辑**。
+
+#### 1. API Server是完全无状态的
+
+- **数据存储：** 它本身不存储任何数据。所有的集群状态（Pod、Service、ConfigMap 等）都存储在后端数据库 **etcd** 中。
+- **水平扩展：** 因为它是无状态的，所以你可以在控制平面运行多个 API Server 实例。它们互不通信，只需连接到同一个 etcd 集群，并在前端挂一个负载均衡器（Load Balancer）即可。
+- **故障恢复：** 如果一个 API Server 实例挂了，只需重新启动一个新的，它从 etcd 读取数据后立即就能投入工作。
+
+#### 2. 它不是“一组 API”
+
+如果把 Kubernetes 比作一个公司，API Server 不是那个“前台接线员”，而是**“安全检查 + 法律合规 + 数据中心入口”**。
+
+当一个请求（例如 `kubectl apply -f pod.yaml`）到达 API Server 时，它会经历一个复杂的**处理管道 (Pipeline)**：
+
+1. **认证 (Authentication)：** 你是谁？（检查证书、Token 等）。
+2. **授权 (Authorization)：** 你有权限创建 Pod 吗？（检查 RBAC 规则）。
+3. **准入控制 (Admission Control)：**
+   - **Mutating Admission：** 自动修改请求。例如：如果你没写 CPU 限制，它帮你加上默认值。
+   - **Validating Admission：** 最后检查。例如：检查这个 Pod 调用的标签是否合法。
+4. **校验 (Validation)：** 检查 YAML 格式是否正确，字段是否符合 K8s 规范。
+5. **持久化 (Persistence)：** 只有通过了以上所有逻辑，它才会把数据写入 **etcd**。
+
+#### 3. 它包含“处理逻辑”，但不包含“控制循环”
+
+##### API Server 的“逻辑” (Logic)
+
+- **协议转换：** 将 HTTP 请求转换为内部对象。
+- **版本映射：** 处理不同版本的 API（如 `v1` 和 `v1beta1`）之间的转换。
+- **Watch 机制逻辑：** 这是 API Server 最核心的逻辑。它维护着与所有组件（Scheduler, Controller Manager, Kubelet）的长连接，一旦 etcd 里的数据变了，它会主动推送到订阅了这些数据的组件。
+
+##### API Server 与循环 (Loop)
+
+- **不包含“调节循环” (Reconciliation Loop)：** * API Server **不关心** Pod 是否真的跑起来了。
+  - API Server **不负责** 在 Pod 挂掉时重启它。
+- **循环在哪里？** 这些“确保现状等于期望”的循环逻辑全部在 **Controller Manager** 中。API Server 只是一个**被动**的守门员，它只负责接受请求、校验、存入数据库。
+
+### 对比总结：API Server vs Controller Manager
+
+| 特性 | API Server | Controller Manager |
+| --- | --- | --- |
+| **状态** | **无状态 (Stateless)** | 有状态逻辑，但配置存储在 etcd |
+| **工作模式** | **被动响应** (请求来了才处理) | **主动循环** (不停地巡逻检查) |
+| **核心逻辑** | 安全、校验、数据准入、Watch 推送 | 副本控制、故障检测、自动修复 |
+| **数据交互** | 直接读写 etcd | **禁止**直连 etcd，必须通过 API Server |
+
+**一句话总结：**
+API Server 是**守门员**（确保进来的数据合法并存入数据库）；Controller Manager 是**监工**（不断循环查看数据库里的任务是否真的被完成了）。
 
 ---
 
