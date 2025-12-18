@@ -9,6 +9,16 @@
       - [Automate Experiments to Run Continuously](#automate-experiments-to-run-continuously)
       - [Minimize Blast Radius](#minimize-blast-radius)
     - [Summary](#summary)
+  - [Principles of Chaos（混沌工程原则）](#principles-of-chaos混沌工程原则)
+    - [什么是混沌工程？](#什么是混沌工程)
+    - [混沌工程的五大核心原则](#混沌工程的五大核心原则)
+      - [1. 建立关于“稳态”的假设 (Build a Hypothesis around Steady State Behavior)](#1-建立关于稳态的假设-build-a-hypothesis-around-steady-state-behavior)
+      - [2. 模拟现实世界的事件 (Vary Real-world Events)](#2-模拟现实世界的事件-vary-real-world-events)
+      - [3. 在生产环境中运行实验 (Run Experiments in Production)](#3-在生产环境中运行实验-run-experiments-in-production)
+      - [4. 持续自动化实验 (Automate Experiments to Run Continuously)](#4-持续自动化实验-automate-experiments-to-run-continuously)
+      - [5. 最小化“爆炸半径” (Minimize Blast Radius)](#5-最小化爆炸半径-minimize-blast-radius)
+    - [实验的基本流程](#实验的基本流程)
+    - [总结：为什么我们要这么做？](#总结为什么我们要这么做)
   - [故障 (Faults) 的定义、分类以及它们的生命周期管理](#故障-faults-的定义分类以及它们的生命周期管理)
     - [故障 (Faults) 的基本概念](#故障-faults-的基本概念)
     - [分类：如何定义和归类故障](#分类如何定义和归类故障)
@@ -86,6 +96,37 @@
     - [Planning AWS FIS Experiments](#planning-aws-fis-experiments)
       - [Basic principles and guidelines](#basic-principles-and-guidelines)
       - [Experiment Planning Guidelines](#experiment-planning-guidelines)
+  - [AWS FIS（Fault Injection Service）的 YAML](#aws-fisfault-injection-service的-yaml)
+    - [AWS FIS YAML 的组织逻辑：三位一体](#aws-fis-yaml-的组织逻辑三位一体)
+      - [1. Targets (目标：对谁做？)](#1-targets-目标对谁做)
+      - [2. Actions (动作：做什么？)](#2-actions-动作做什么)
+      - [3. Stop Conditions (止损：什么时候停？)](#3-stop-conditions-止损什么时候停)
+    - [一个具体的 AWS FIS YAML 例子](#一个具体的-aws-fis-yaml-例子)
+      - [为什么看起来复杂？](#为什么看起来复杂)
+    - [学习参考资料](#学习参考资料)
+  - [AWS SSM（Systems Manager）文档](#aws-ssmsystems-manager文档)
+    - [SSM 文档的基本语法结构](#ssm-文档的基本语法结构)
+    - [为什么你会看到 `if` 语句？](#为什么你会看到-if-语句)
+    - [SSM 原生的“逻辑控制”语句](#ssm-原生的逻辑控制语句)
+      - [1. `precondition` (预设条件)](#1-precondition-预设条件)
+      - [2. `nextStep` 和 `finallyStep` (分支跳转)](#2-nextstep-和-finallystep-分支跳转)
+      - [3. `timeoutSeconds` (超时控制)](#3-timeoutseconds-超时控制)
+    - [总结：如何快速读懂它？](#总结如何快速读懂它)
+      - [常用参考资料](#常用参考资料)
+  - [Bash in YAML](#bash-in-yaml)
+    - [1. 最核心的逻辑：`if` 语句（判断）](#1-最核心的逻辑if-语句判断)
+      - [常见条件判断符号](#常见条件判断符号)
+    - [2. 变量：存储信息](#2-变量存储信息)
+    - [3. 常见命令（你在 FIT 脚本中常看到的）](#3-常见命令你在-fit-脚本中常看到的)
+    - [4. 组合指令：`&&` 和 `||`](#4-组合指令-和-)
+    - [5. 实战翻译：带你读一段 FIT 脚本](#5-实战翻译带你读一段-fit-脚本)
+    - [快速看懂的三个窍门](#快速看懂的三个窍门)
+  - [AWS FIS/SSM 文档中经常出现的几类“模版化”的 Shell 脚本](#aws-fisssm-文档中经常出现的几类模版化的-shell-脚本)
+    - [模式一：环境自愈与工具安装 (The "Check-and-Install" Pattern)](#模式一环境自愈与工具安装-the-check-and-install-pattern)
+    - [模式二：带保护的破坏指令 (The "Safe Attack" Pattern)](#模式二带保护的破坏指令-the-safe-attack-pattern)
+    - [模式三：状态检查与回滚 (The "Validation" Pattern)](#模式三状态检查与回滚-the-validation-pattern)
+    - [模式四：变量替换 (The "Placeholder" Pattern)](#模式四变量替换-the-placeholder-pattern)
+    - [总结：看懂脚本的“三板斧”](#总结看懂脚本的三板斧)
 
 
 ## [PRINCIPLES OF CHAOS ENGINEERING](https://principlesofchaos.org/)
@@ -149,6 +190,70 @@ Experimenting in production has the potential to cause unnecessary customer pain
 
 Chaos specifically tackles systemic uncertainty in these distributed systems. The Principles of Chaos provide confidence to innovate quickly at massive scales and give customers the high quality experiences they deserve.
 
+---
+
+## Principles of Chaos（混沌工程原则）
+
+是混沌工程领域的奠基性文档。它并不是关于如何“搞破坏”的指南，而是关于如何**通过科学实验构建系统弹性（Resilience）**的方法论。
+
+以下是其核心要点的总结：
+
+### 什么是混沌工程？
+
+混沌工程是在分布式系统上进行**实验**的学科，目的是建立对系统抵御生产环境中各种突发故障能力的**信心**。
+
+### 混沌工程的五大核心原则
+
+#### 1. 建立关于“稳态”的假设 (Build a Hypothesis around Steady State Behavior)
+
+不要关注系统的内部指标（如 CPU 使用率），而要关注**可衡量的系统输出**（如每秒订单数、平均响应延迟）。
+
+- **要点：** 定义什么是“正常”。如果系统在故障注入时，这些核心业务指标依然保持稳定，说明系统具有弹性。
+
+#### 2. 模拟现实世界的事件 (Vary Real-world Events)
+
+故障不仅仅是服务器宕机。你应该根据发生概率和潜在影响来排列实验。
+
+- **模拟对象：** 硬件故障、网络延迟、下游服务异常、流量激增、资源耗尽（内存/磁盘）等。
+
+#### 3. 在生产环境中运行实验 (Run Experiments in Production)
+
+这是最具争议但也最重要的原则。
+
+- **理由：** 预发环境（Staging）永远无法完全模拟真实的流量模式、复杂的网络拓扑和真实的数据规模。只有在生产环境中验证，才能获得真正的信心。
+
+#### 4. 持续自动化实验 (Automate Experiments to Run Continuously)
+
+手动测试是一次性的。随着系统代码的迭代，昨天的抗风险能力不代表今天依然有效。
+
+- **要点：** 将混沌实验集成到 CI/CD 流水线中，让实验自动、持续地运行。
+
+#### 5. 最小化“爆炸半径” (Minimize Blast Radius)
+
+混沌工程不是为了真的搞垮系统，而是为了学习。
+
+- **要点：** 实验必须伴随严密的监控。如果实验导致业务指标出现异常波动的迹象，必须能够**立即自动停止**并恢复系统。
+- **策略：** 先从一小部分用户或一台服务器开始实验，确认安全后再扩大规模。
+
+### 实验的基本流程
+
+1. **定义稳态：** 确定描述正常行为的指标。
+2. **提出假设：** 假设如果注入 X 故障，稳态仍能维持。
+3. **注入故障：** 引入变量（如断开一个可用区、模拟网络延迟）。
+4. **观察对比：** 对比实验组和对照组的差异。
+5. **学习修复：** 如果稳态被破坏，说明找到了弱点，修复它。
+
+### 总结：为什么我们要这么做？
+
+混沌工程的本质是**“主动寻找弱点”**。与其等到凌晨三点被突发的线上事故叫醒，不如在白天、在受控的环境下主动触发这些故障，确保我们的架构（如你之前提到的 Istio、AWS 基础设施）能够自动处理这些异常。
+
+这就解释了你看到的 **AWS FIS YAML** 为什么那么复杂：
+
+- 它需要定义 **Target**（限制爆炸半径）。
+- 它需要定义 **Action**（模拟现实事件）。
+- 它需要定义 **Stop Condition**（自动化止损）。
+
+---
 
 ## 故障 (Faults) 的定义、分类以及它们的生命周期管理
 
@@ -818,3 +923,352 @@ Guidelines:
 6. **Identify the applicable metrics** — Can use these metrics to determine the baseline or "steady state" when your application is performing optimally. Then, you can monitor these metrics during or after the experiment to determine the impact.
 7. **Define an acceptable performance threshold for your system** — Identify the metric that represents an acceptable, steady state for your system. You will use this metric to create one or more CloudWatch alarms that represent a stop condition for your experiment. If the alarm is triggered, the experiment is automatically stopped.
 
+---
+
+## AWS FIS（Fault Injection Service）的 YAML
+
+普通的 Kubernetes YAML（如 Pod、Deployment）是**状态声明**，而 AWS FIS（Fault Injection Service，即你提到的 FIT）的 YAML 是**实验方案**。
+
+K8s YAML 是在描述**我要这台机器长什么样**，而 AWS FIS YAML 是在描述**我要在什么时候、对谁、做一个什么样的破坏动作**。
+
+### AWS FIS YAML 的组织逻辑：三位一体
+
+AWS FIS 的配置文件（通常称为 Experiment Template）是按照“动作流水线”来组织的。它的核心逻辑可以概括为：**对谁做 (Targets) -> 做什么 (Actions) -> 什么时候停 (Stop Conditions)**。
+
+#### 1. Targets (目标：对谁做？)
+
+这部分定义了故障注入的对象。它不像 K8s 只是指定一个名字，它通常使用 **Tags（标签）** 或 **Filters（过滤器）** 来动态筛选资源。
+
+- *比如：* “选中所有标签为 `env:prod` 且处于 `running` 状态的 EC2 实例。”
+
+#### 2. Actions (动作：做什么？)
+
+这是你看到的“最陌生”的部分，也是 `run` 关键字出现的地方。
+
+- AWS FIS 并不总是能直接通过 API 搞坏系统，有时它需要进入系统内部。
+- **为什么有 Shell 脚本？** 当你需要模拟“CPU 飙升”、“磁盘占满”或“修改网络配置”时，FIS 会通过 **AWS SSM (Systems Manager)** 在目标机器上运行一段 Linux 命令。这就是你看到的类似 Shell 的内容。
+
+#### 3. Stop Conditions (止损：什么时候停？)
+
+这是混沌工程的“保险丝”。
+
+- 通常关联一个 **CloudWatch Alarm**。如果实验过程中系统的错误率超过 5%，FIS 会自动终止实验并尝试恢复，防止真的把生产环境搞瘫痪。
+
+### 一个具体的 AWS FIS YAML 例子
+
+假设我们要给一组 EC2 实例注入一个“CPU 压力测试”故障。这个 YAML 看起来像这样（为了易读，简化了部分格式）：
+
+```yaml
+description: "模拟 CPU 满载实验"
+# 1. 目标：选中带有特定标签的 EC2
+targets:
+  MyTestInstances:
+    resourceType: "aws:ec2:instance"
+    resourceTags:
+      "ChaosReady": "true"
+    selectionMode: "ALL" # 选中所有符合条件的
+
+# 2. 动作：运行一段 Shell 脚本来消耗 CPU
+actions:
+  CPUStress:
+    actionId: "aws:ssm:send-command" # 使用 SSM 运行命令
+    parameters:
+      duration: "PT2M" # 持续 2 分钟
+      # 这里的 documentContent 就是你看到的类似 Shell 的部分
+      documentContent: |
+        {
+          "mainSteps": [
+            {
+              "action": "aws:runShellScript",
+              "name": "runCPUStress",
+              "inputs": {
+                "runCommand": [
+                  "sudo apt-get update",
+                  "sudo apt-get install -y stress-ng",
+                  "stress-ng --cpu 4 --timeout 120s" 
+                ]
+              }
+            }
+          ]
+        }
+    targets:
+      Instances: MyTestInstances
+
+# 3. 止损：如果错误率报警，立即停止
+stopConditions:
+  - source: "none" # 练习时可设为 none，生产环境需设为 CloudWatch Alarm ARN
+
+```
+
+#### 为什么看起来复杂？
+
+1. **嵌套多：** 它嵌套了 AWS 其他服务的协议（比如上面例子里的 SSM Document 格式）。
+2. **权限复杂：** FIS 需要代表你执行命令，所以 YAML 里经常会涉及各种 IAM Role 的引用。
+3. **流程性：** 它有 `startAfter` 等关键字，可以定义“先断网，再杀进程”这种先后顺序。
+
+### 学习参考资料
+
+如果你想深入理解这种“奇怪”的 YAML，可以参考以下资源：
+
+1. **AWS FIS 用户指南：** 搜索 [AWS FIS Actions Reference](https://docs.aws.amazon.com/fis/latest/userguide/fis-actions-reference.html)，这里列出了所有可用的“破坏动作”。
+2. **SSM Documents 语法：** 因为很多 `run` 脚本是基于 SSM 的，理解 [AWS Systems Manager Documents](https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-ssm-docs.html) 的格式对理解 FIT YAML 至关重要。
+3. **混沌工程原则：** 访问 [Principles of Chaos](https://principlesofchaos.org/)，了解为什么要这么组织实验（稳态 -> 假设 -> 注入 -> 验证）。
+
+---
+
+## AWS SSM（Systems Manager）文档
+
+**在 AWS SSM（Systems Manager）文档中，复杂的逻辑（如 `if`、`for` 循环）通常不是 SSM 本身的语法，而是嵌入在 SSM 中的 Shell 脚本语法。**
+
+简单来说，SSM 文档就像是一个“信封”，里面的 `runCommand` 是一封用 **Bash**（Linux）或 **PowerShell**（Windows）写的“信”。
+
+### SSM 文档的基本语法结构
+
+SSM 文档通常使用 YAML 格式，其核心结构如下：
+
+```yaml
+schemaVersion: '2.2' # 文档版本
+description: "描述这个文档做什么"
+parameters: # (可选) 定义变量，可以在脚本中引用
+  Action:
+    type: String
+    default: "Install"
+mainSteps: # 核心步骤
+  - action: aws:runShellScript # 动作类型：执行 Shell 脚本
+    name: runMyScript # 步骤名称
+    inputs:
+      runCommand: # 这里就是你看到的“代码”部分
+        - |
+          # 这下面其实是标准的 Linux Shell 语法！
+          if [ "{{Action}}" == "Install" ]; then
+            echo "开始安装..."
+            sudo apt-get install -y nginx
+          else
+            echo "跳过安装。"
+          fi
+
+```
+
+### 为什么你会看到 `if` 语句？
+
+在 AWS FIS（故障注入）的场景下，`if` 语句通常出现在 `runCommand` 列表里。这主要有三个原因：
+
+1. **环境检查：** 在注入故障前，先判断目标路径是否存在。
+   - `if [ -d "/mnt/data" ]; then ...`
+
+2. **幂等性（Idempotency）：** 确保脚本多次运行不会报错。
+   - `if ! command -v stress-ng &> /dev/null; then sudo apt install stress-ng; fi`（如果没装这个工具，就装一下）。
+
+3. **状态清理：** 判断故障是否已经存在，如果存在先清理再重新注入。
+
+### SSM 原生的“逻辑控制”语句
+
+虽然脚本内部用的是 Bash，但 SSM 文档本身也提供了一些**原生的逻辑控制键**，用来决定步骤（Steps）之间的流转：
+
+#### 1. `precondition` (预设条件)
+
+决定该步骤是否执行。如果条件不满足，该步骤会被跳过。
+
+```yaml
+- action: aws:runShellScript
+  name: testStep
+  precondition:
+    StringEquals:
+      - "{{ platformType }}"
+      - "Linux"
+
+```
+
+#### 2. `nextStep` 和 `finallyStep` (分支跳转)
+
+这类似于编程里的 `goto` 或 `switch`。你可以根据上一步的结果跳转到不同的步骤。
+
+- `onFailure`: 如果这一步失败了，下一步去哪（比如去执行“清理”步骤）。
+- `onSuccess`: 成功了去哪。
+
+#### 3. `timeoutSeconds` (超时控制)
+
+在故障注入中非常重要。如果脚本跑太久没反应，SSM 会强行终止它。
+
+### 总结：如何快速读懂它？
+
+当你再次看到那种复杂的 YAML 时，请尝试**分两步拆解**：
+
+- **第一步（看外壳）：** 找 `action: aws:runShellScript`。这告诉你接下来的内容是发给 Linux 机器执行的指令。
+- **第二步（读内核）：** 把 `runCommand` 下面的内容当成一个 **.sh 脚本**来读。
+  - `{{ ... }}`：这是 SSM 的变量占位符。
+  - `if [ ... ]; then ... fi`：这是标准的 Linux 判断语句。
+
+#### 常用参考资料
+
+- **AWS 官方文档：** [SSM 插件语法参考](https://docs.aws.amazon.com/systems-manager/latest/userguide/ssm-plugins.html)（涵盖了 `aws:runShellScript` 等所有动作）。
+- **SSM 文档模式：** [SSM Document Schema](https://docs.aws.amazon.com/systems-manager/latest/userguide/document-schemas-features.html)。
+
+---
+
+## Bash in YAML
+
+Shell（主要是 Bash）就像是在**和电脑下达一连串简短的指令**。在 AWS FIS 或 SSM 的 YAML 中，Shell 脚本通常扮演“现场特工”的角色：去检查环境、安装工具、或者搞点破坏。
+
+能够**看懂**大部分 SSM 脚本的核心语法。
+
+### 1. 最核心的逻辑：`if` 语句（判断）
+
+你在 YAML 中看到的 `if` 语句，其实就是电脑的“选择题”。它的结构很固定，但长得有点怪：
+
+```bash
+if [ 这里的条件为真 ]; then
+    # 做这件事
+else
+    # 否则做那件事
+fi  # fi 就是 if 倒过来写，代表判断结束
+
+```
+
+#### 常见条件判断符号
+
+在 `[` `]` 括号里，你会看到这些缩写，它们是理解逻辑的关键：
+
+- **`-d` (directory):** “这是一个目录吗？”
+  - `if [ -d "/var/log" ]; then ...`
+- **`-f` (file):** “这是一个文件吗？”
+  - `if [ -f "/etc/config" ]; then ...`
+- **`-z` (zero):** “这个字符串是空的吗？”
+- **`==` 或 `-eq`:** “两者相等吗？”
+- **`!=` 或 `-ne`:** “两者不相等吗？”
+
+### 2. 变量：存储信息
+
+Shell 脚本中不需要定义类型，直接赋值即可。但在**使用**变量时，前面必须加一个 **`$`** 符号。
+
+```bash
+TARGET_PATH="/tmp/test"        # 赋值（注意等号两边不能有空格！）
+echo "正在检查 $TARGET_PATH"    # 使用变量
+
+```
+
+### 3. 常见命令（你在 FIT 脚本中常看到的）
+
+在 SSM 的 `runCommand` 里，你经常会看到这几个“常客”：
+
+- **`sudo`:** 以管理员（最高权限）身份运行。
+- **`apt-get` / `yum`:** 安装软件的工具（比如安装用来制造故障的 `stress-ng`）。
+- **`grep`:** 搜索关键字。
+- **`> /dev/null 2>&1`:** 这是个“黑洞”，意思是不管执行成功还是失败，都不要把信息打印到屏幕上。
+- **`echo`:** 在屏幕上打印一句话。
+
+### 4. 组合指令：`&&` 和 `||`
+
+这是 Shell 里的短路逻辑，非常高效：
+
+- **`A && B`:** “只有 A 成功了，才去执行 B”。（相当于：执行并继续）
+- **`A || B`:** “如果 A 失败了，就去执行 B”。（相当于：备选方案）
+
+### 5. 实战翻译：带你读一段 FIT 脚本
+
+假设你在 YAML 的 `runCommand` 里看到这一段：
+
+```bash
+if ! command -v stress-ng &> /dev/null; then
+  sudo apt-get update && sudo apt-get install -y stress-ng
+fi
+```
+
+我们来把它翻译成人话
+
+1. **`command -v stress-ng`**: 检查系统里有没有 `stress-ng` 这个工具。
+2. **`! ... &> /dev/null`**: “如果不存这个工具（并且把报错信息隐藏起来）”。
+3. **`then ... fi`**: 那么：
+4. **`sudo apt-get update && ...`**: 先更新软件列表，**如果更新成功了**，再安装 `stress-ng`。
+
+### 快速看懂的三个窍门
+
+1. **找关键字：** 先看有没有 `if`, `then`, `else`, `fi`。这决定了代码的整体走向。
+2. **找 $ 符号：** 凡是带 `$\` 的都是变量，通常代表路径、IP 或配置名。
+3. **忽略长命令：** 像 `stress-ng --cpu 4 --timeout 120s` 这种，你只需要知道它在执行具体的“破坏任务”，具体的参数（`--cpu` 等）如果不记得，可以随时查字典。
+
+---
+
+## AWS FIS/SSM 文档中经常出现的几类“模版化”的 Shell 脚本
+
+以下是故障注入脚本中最常见的四个“套路”：
+
+### 模式一：环境自愈与工具安装 (The "Check-and-Install" Pattern)
+
+因为云服务器可能是新启动的，上面不一定有故障模拟工具（如 `stress-ng`）。脚本的第一步通常是“缺啥补啥”。
+
+```bash
+# 如果没有找到这个命令
+if ! command -v stress-ng &> /dev/null; then
+  # 那就尝试安装它
+  if [ -f /etc/debian_version ]; then
+    sudo apt-get update && sudo apt-get install -y stress-ng
+  elif [ -f /etc/redhat-release ]; then
+    sudo yum install -y stress-ng
+  fi
+fi
+
+```
+
+- **关键词：** `command -v` (检查命令是否存在), `apt-get` / `yum` (安装工具)。
+- **目的：** 确保后面的破坏指令能跑得通。
+
+### 模式二：带保护的破坏指令 (The "Safe Attack" Pattern)
+
+直接杀进程可能会导致机器死机无法恢复，所以脚本通常会带有**超时**或**后台运行**逻辑。
+
+```bash
+# 启动 CPU 压力测试，持续 60 秒后自动停止
+stress-ng --cpu 4 --timeout 60s &
+
+# 记录下这个进程的 ID，方便后续万一要手动清理
+ATTACK_PID=$!
+echo "故障进程 ID 为: $ATTACK_PID"
+
+```
+
+- **关键词：** `&` (让命令在后台跑，不阻塞脚本), `$!` (获取最后一个后台进程的 ID)。
+- **目的：** 确保故障是受控的，不会让脚本卡死。
+
+### 模式三：状态检查与回滚 (The "Validation" Pattern)
+
+有些脚本会包含一个判断逻辑，确认故障是否真的生效了，如果没有生效则报错退出。
+
+```bash
+# 检查 80 端口是否还在监听
+if ss -tuln | grep -q ":80 "; then
+  echo "服务依然在线，故障注入失败！"
+  exit 1  # 告诉系统，这一步执行失败了
+else
+  echo "服务已下线，符合实验预期。"
+fi
+
+```
+
+- **关键词：** `grep -q` (安静地搜索关键词), `exit 1` (报错并终止实验)。
+- **目的：** 验证实验的有效性。
+
+### 模式四：变量替换 (The "Placeholder" Pattern)
+
+这是最让初学者困惑的地方。你会看到很多大括号 `{{ ... }}`。
+
+```bash
+# 在 YAML 中看起来可能是这样：
+# runCommand: ["sudo kill -9 {{TargetProcessId}}"]
+
+# 实际上在执行时，SSM 会把它变成：
+sudo kill -9 1234
+
+```
+
+- **注意：** `{{ ... }}` 不是 Shell 的语法，而是 **SSM 的变量注入**。看到它，你就把它当成一个“填空题”，实际执行时会被换成具体的值。
+
+### 总结：看懂脚本的“三板斧”
+
+下次当你打开公司的 YAML 看到 `run` 字段时，请按顺序寻找这三个标志：
+
+1. **`#!` 或者 `sudo` 开头：** 它是脚本的开始。
+2. **`if ... fi` 块：** 它在做决定（装软件？查环境？报错？）。
+3. **具体的工具名：** 看到 `kill`, `stress-ng`, `tc` (控制网络), `rm` (删除文件)，你就知道它具体在“干什么坏事”了。
+
+---
